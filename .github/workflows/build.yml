@@ -1,0 +1,109 @@
+name: CI
+on:
+  push:
+    branches-ignore:
+      - trunk
+      - svn2git-cache
+  pull_request:
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-18.04, macos-10.15, windows-2019]
+        log: [yes, no]
+        include:
+          - nightly: nightly
+            os: windows-2019
+            log: no
+    
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Brew Dependencies
+        run: |
+          brew install scons mingw-w64 zlib
+          curl -sLo cppunit.rb "https://sourceforge.net/p/nsis/code/HEAD/tree/web-scripts/trunk/cppunit.rb?format=raw"
+          brew install -s --formula cppunit.rb
+        if: startsWith(matrix.os, 'macos')
+      - name: Apt Dependencies
+        run: sudo DEBIAN_FRONTEND=noninteractive apt-get install -y scons g++-mingw-w64-i686 binutils-mingw-w64-i686 zlib1g-dev libcppunit-dev
+        if: startsWith(matrix.os, 'ubuntu')
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.8'
+        if: startsWith(matrix.os, 'windows')
+      - name: Choco Dependencies
+        run: |
+          curl -sLo cppunit-msvc-1.12.1.exe https://downloads.sourceforge.net/project/cppunit-msvc/cppunit-msvc-1.12.1.exe
+          $arguments = "/S /D=$HOME\cppunit"
+          Start-Process ./cppunit-msvc-1.12.1.exe $arguments -NoNewWindow -Wait
+          pip install scons
+          choco install zip
+          # microsoft removed the download of htmlhelp.exe -- https://chocolatey.org/packages/html-help-workshop#comment-5245282888
+          #choco install html-help-workshop 
+          echo "${Env:ProgramFiles(x86)}\HTML Help Workshop" >> $Env:GITHUB_PATH
+        if: startsWith(matrix.os, 'windows')
+      - name: Zlib Dependency
+        run: |
+          curl -sLo $HOME/zlib.zip "https://downloads.sourceforge.net/project/libpng/zlib/1.2.8/zlib128-dll.zip?r=&ts=1403402496&use_mirror=hivelocity"
+          mkdir $HOME/zlib
+          unzip $HOME/zlib.zip -d $HOME/zlib
+      - name: Build
+        run: |
+          scons ZLIB_W32=$HOME/zlib SKIPUTILS="NSIS Menu" NSIS_CONFIG_LOG=${{ matrix.log }} test dist-zip
+        if: "!startsWith(matrix.os, 'windows')"
+      - name: Build (Windows)
+        run: |
+          scons ZLIB_W32=$HOME/zlib SKIPUTILS="NSIS Menu" NSIS_CONFIG_LOG=${{ matrix.log }} APPEND_CPPPATH=$HOME/cppunit/include APPEND_LIBPATH=$HOME/cppunit/lib/release-win32 test dist
+        if: startsWith(matrix.os, 'windows')
+      - name: Config Errors
+        if: ${{ failure() }}
+        run: cat config.log
+      - name: Nightly Build
+        run: |
+          rm nsis-*.zip
+          scons ZLIB_W32=$HOME/zlib SKIPUTILS="NSIS Menu" DOCTYPES=web dist-zip
+          echo https://github.com/$Env:GITHUB_REPOSITORY/actions/runs/$Env:GITHUB_RUN_ID > build.log
+          ls -Name nsis-*.zip -OutVariable zip
+          zip $zip build.log
+        if: matrix.nightly == 'nightly' && github.ref == 'refs/heads/master'
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: build.zip
+          path: nsis-*.zip
+        if: matrix.nightly == 'nightly' && github.ref == 'refs/heads/master'
+
+  nightly:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-20.04
+    needs: [build]
+    steps:
+      - name: Download a single artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build.zip
+      - name: Upload to SourceForge
+        run: |
+          echo "$DEPLOY_KEY" > $HOME/deploy_key
+          set -ex
+          chmod 600 $HOME/deploy_key
+          mkdir nightly
+          unzip nsis-*.zip -d nightly
+          LocalNightly=`ls -d nightly/nsis-*`
+          RemoteNightly=kichik,nsis@web.sourceforge.net:/home/project-web/nsis/htdocs/nightly
+          scp -oStrictHostKeyChecking=no -oBatchMode=yes -i $HOME/deploy_key nsis-*.zip $RemoteNightly/nsis.zip
+          scp -oStrictHostKeyChecking=no -oBatchMode=yes -i $HOME/deploy_key nightly/build.log $RemoteNightly/build.log
+          cp $LocalNightly/Docs/Contents.html $LocalNightly/Docs/index.html
+          echo "Options +indexes" > $LocalNightly/Docs/.htaccess
+          echo "Options +indexes" > $LocalNightly/Examples/.htaccess
+          echo "Options +indexes" > $LocalNightly/Include/.htaccess
+          echo "Options +indexes" > $LocalNightly/Contrib/.htaccess
+          rsync -e "ssh -i $HOME/deploy_key -oStrictHostKeyChecking=no -oBatchMode=yes" -va --delete $LocalNightly/Docs/ $RemoteNightly/Docs/
+          rsync -e "ssh -i $HOME/deploy_key -oStrictHostKeyChecking=no -oBatchMode=yes" -va --delete $LocalNightly/Examples/ $RemoteNightly/Examples/
+          rsync -e "ssh -i $HOME/deploy_key -oStrictHostKeyChecking=no -oBatchMode=yes" -va --delete $LocalNightly/Include/ $RemoteNightly/Include/
+          rsync -e "ssh -i $HOME/deploy_key -oStrictHostKeyChecking=no -oBatchMode=yes" -va --delete $LocalNightly/Contrib/ $RemoteNightly/Contrib/
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
