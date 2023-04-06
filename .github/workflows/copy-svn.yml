@@ -1,0 +1,126 @@
+# to bootstrap this action, create an empty repo with just this file and svn-authors
+# run the action once with force parameter set to "yes"
+
+# git commit -m "xxx" * && git push -f && gh workflow run -R kichik/nsis-travis copy-svn.yml -f force=yes
+
+name: Copy from SourceForge Subversion
+on: 
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force push (CAREFUL!)'
+        required: false
+  schedule:
+    - cron:  '4 10 * * *'
+
+jobs:
+  copy:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install git-svn
+        run: sudo add-apt-repository ppa:git-core/ppa && sudo apt update && sudo apt install git-svn
+
+      - name: Configure git
+        run: |
+          git config --global user.email "kichik@gmail.com"
+          git config --global user.name "Amir Szekely"
+
+      - name: Restore cache
+        id: restore-cache
+        run: |
+          if git fetch origin svn2git-cache; then
+            git checkout svn2git-cache
+          else
+            git checkout --orphan svn2git-cache
+            git rm -rf --cached .
+            git add .github/workflows/*
+            git commit -m "Empty cache"
+            echo "cache-hit=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if [ -f svn2git-cache.tar.gz ]; then
+            tar xzf svn2git-cache.tar.gz
+            echo "cache-hit=true" >> $GITHUB_OUTPUT
+          else
+            echo "cache-hit=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Initial SVN clone
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        run: |
+          git svn clone -A.github/workflows/svn-authors -s https://svn.code.sf.net/p/nsis/code/NSIS svn2git
+
+      - name: SVN fetch
+        working-directory: svn2git
+        run: |
+          git svn fetch --fetch-all
+          git svn rebase
+
+      - name: SVN branches
+        working-directory: svn2git
+        run: |
+          for remote_branch in $(git branch -r | grep -v /tags/); do
+            if echo $remote_branch | grep @; then
+              echo ignoring weird branch $remote_branch
+              continue
+            fi
+            
+            local_branch=`echo $remote_branch | cut -d / -f 2-`
+            git checkout -b "$local_branch" "$remote_branch" || git checkout "$local_branch"
+            git svn rebase
+          done
+          git checkout master
+
+      - name: SVN tags
+        working-directory: svn2git
+        run: |
+          git for-each-ref --format="%(refname:short) %(objectname)" refs/remotes/origin/tags \
+          | while read BRANCH REF
+            do
+              TAG_NAME=`echo $BRANCH | cut -d / -f 3-`
+              BODY="$(git log -1 --format=format:%B $REF)"
+              echo "ref=$REF parent=$(git rev-parse $REF^) tagname=$TAG_NAME body=$BODY" >&2
+              if [ $(git tag -l "$TAG_NAME") ]; then
+                echo tag already exists
+              else
+                git tag -a -m "$BODY" $TAG_NAME $REF^
+              fi
+            done
+
+      - name: Setup GitHub access
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          touch ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "$SSH_KEY" >> ~/.ssh/id_ed25519
+
+      - name: Push to GitHub
+        working-directory: svn2git
+        run: |
+          flags=""
+          if [[ "${{ github.event.inputs.force }}" = "yes" ]]; then
+            flags="--force"
+          fi
+          remote_repo="git@github.com:${GITHUB_REPOSITORY}.git"
+          git push "$remote_repo" --all $flags
+          git push "$remote_repo" --tags $flags
+
+      - name: GC
+        working-directory: svn2git
+        run: |
+          echo run garbage collection so caching does not fail while files are changing
+          git gc --auto
+
+      - name: Save cache
+        run: |
+          rm -f svn2git-cache.tar.gz
+          tar czf svn2git-cache.tar.gz svn2git
+          git add svn2git-cache.tar.gz
+          cp svn2git/.github/workflows/* .github/workflows/
+          git add .github/workflows/*
+          git commit --amend -m "update cache" svn2git-cache.tar.gz
+          git push --force git@github.com:${GITHUB_REPOSITORY}.git svn2git-cache
