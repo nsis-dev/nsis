@@ -93,8 +93,8 @@ HRESULT CLZInWindow::ReadBlock()
     if(numReadBytes == 0)
     {
       _posLimit = _streamPos;
-      const Byte *pointerToPostion = _buffer + _posLimit;
-      if(pointerToPostion > _pointerToLastSafePosition)
+      const Byte *pointerToPosition = _buffer + _posLimit;
+      if(pointerToPosition > _pointerToLastSafePosition)
         _posLimit = (UInt32)(_pointerToLastSafePosition - _buffer);
       _streamEndWasReached = true;
       return S_OK;

@@ -725,7 +725,7 @@ HRESULT CEncoder::GetOptimum(UInt32 position, UInt32 &backRes, UInt32 &lenRes)
 
   UInt32 len = lenEnd;
   do
-    _optimum[len--].Price = kIfinityPrice;
+    _optimum[len--].Price = kInfinityPrice;
   while (len >= 2);
 
   for(i = 0; i < kNumRepDistances; i++)
@@ -934,7 +934,7 @@ HRESULT CEncoder::GetOptimum(UInt32 position, UInt32 &backRes, UInt32 &lenRes)
         {
           UInt32 offset = cur + 1 + lenTest2;
           while(lenEnd < offset)
-            _optimum[++lenEnd].Price = kIfinityPrice;
+            _optimum[++lenEnd].Price = kInfinityPrice;
           UInt32 curAndLenPrice = nextRepMatchPrice + GetRepPrice(
               0, lenTest2, state2, posStateNext);
           COptimal &optimum = _optimum[offset];
@@ -962,7 +962,7 @@ HRESULT CEncoder::GetOptimum(UInt32 position, UInt32 &backRes, UInt32 &lenRes)
       for (lenTest = 2; lenTest < numAvailableBytes && 
           data[lenTest] == data[(size_t)lenTest - backOffset]; lenTest++);
       while(lenEnd < cur + lenTest)
-        _optimum[++lenEnd].Price = kIfinityPrice;
+        _optimum[++lenEnd].Price = kInfinityPrice;
       UInt32 lenTestTemp = lenTest;
       UInt32 price = repMatchPrice + GetPureRepPrice(repIndex, state, posState);
       do
@@ -1010,7 +1010,7 @@ HRESULT CEncoder::GetOptimum(UInt32 position, UInt32 &backRes, UInt32 &lenRes)
             {
               UInt32 offset = cur + lenTest + 1 + lenTest2;
               while(lenEnd < offset)
-                _optimum[++lenEnd].Price = kIfinityPrice;
+                _optimum[++lenEnd].Price = kInfinityPrice;
               UInt32 curAndLenPrice = nextRepMatchPrice + GetRepPrice(
                   0, lenTest2, state2, posStateNext);
               COptimal &optimum = _optimum[offset];
@@ -1041,7 +1041,7 @@ HRESULT CEncoder::GetOptimum(UInt32 position, UInt32 &backRes, UInt32 &lenRes)
     {
       UInt32 normalMatchPrice = matchPrice + _isRep[state.Index].GetPrice0();
       while(lenEnd < cur + newLen)
-        _optimum[++lenEnd].Price = kIfinityPrice;
+        _optimum[++lenEnd].Price = kInfinityPrice;
 
       UInt32 offs = 0;
       while(startLen > matchDistances[offs])
@@ -1096,7 +1096,7 @@ HRESULT CEncoder::GetOptimum(UInt32 position, UInt32 &backRes, UInt32 &lenRes)
             {
               UInt32 offset = cur + lenTest + 1 + lenTest2;
               while(lenEnd < offset)
-                _optimum[++lenEnd].Price = kIfinityPrice;
+                _optimum[++lenEnd].Price = kInfinityPrice;
               UInt32 curAndLenPrice = nextRepMatchPrice + GetRepPrice(0, lenTest2, state2, posStateNext);
               COptimal &optimum = _optimum[offset];
               if (curAndLenPrice < optimum.Price) 

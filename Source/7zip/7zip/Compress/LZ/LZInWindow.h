@@ -58,8 +58,8 @@ public:
     _pos++;
     if (_pos > _posLimit)
     {
-      const Byte *pointerToPostion = _buffer + _pos;
-      if(pointerToPostion > _pointerToLastSafePosition)
+      const Byte *pointerToPosition = _buffer + _pos;
+      if(pointerToPosition > _pointerToLastSafePosition)
         MoveBlock();
       return ReadBlock();
     }

@@ -85,7 +85,7 @@ inline UInt32 GetPosSlot2(UInt32 pos)
   return g_FastPos[pos >> 26] + 52;
 }
 
-const UInt32 kIfinityPrice = 0xFFFFFFF;
+const UInt32 kInfinityPrice = 0xFFFFFFF;
 
 const UInt32 kNumOpts = 1 << 12;
 
@@ -312,7 +312,7 @@ class CEncoder :
   UInt32 GetPosLen2Price(UInt32 pos, UInt32 posState) const
   {
     if (pos >= kNumFullDistances)
-      return kIfinityPrice;
+      return kInfinityPrice;
     return _distancesPrices[0][pos] + _lenEncoder.GetPrice(0, posState);
   }
   UInt32 GetPosLen3Price(UInt32 pos, UInt32 len, UInt32 posState) const
