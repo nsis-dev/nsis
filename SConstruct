@@ -5,7 +5,8 @@ EnsurePythonVersion(2,7)
 stubs = [
 	'bzip2',
 	'lzma',
-	'zlib'
+	'zlib',
+	'zstd'
 ]
 
 plugin_libs = [
@@ -182,6 +183,7 @@ opts.Add(('APPEND_CCFLAGS', 'Additional C/C++ compiler flags'))
 opts.Add(('APPEND_LINKFLAGS', 'Additional linker flags'))
 opts.Add(PathVariable('WXWIN', 'Path to wxWindows library folder (e.g. C:\\Dev\\wxWidgets-2.8.10)', os.environ.get('WXWIN')))
 opts.Add(PathVariable('ZLIB_W32', 'Path to Win32 zlib library folder (e.g. C:\\Dev\\zlib-1.2.3)', os.environ.get('ZLIB_W32')))
+opts.Add(PathVariable('ZSTD_W32', 'Path to Win32 zstd library folder (e.g. C:\\Dev\\zstd-1.5.7)', os.environ.get('ZSTD_W32')))
 # build options
 opts.Add(BoolVariable('UNICODE', 'Build the Unicode version of the compiler and tools', 'yes'))
 opts.Add(BoolVariable('DEBUG', 'Build executables with debugging information', 'no'))
@@ -557,6 +559,29 @@ if 'ZLIB_W32' in defenv:
 		[defenv['ZLIB_W32'], defenv['ZLIB_W32_LIB']])
 	defenv['ZLIB_W32_NEW_DLL'] = defenv.FindFile('zlib.dll',
 		[defenv['ZLIB_W32'], defenv['ZLIB_W32_LIB']])
+
+if 'ZSTD_W32' in defenv:
+	defenv['ZSTD_W32_INC'] = os.path.dirname(str(
+		defenv.FindFile('zstd.h',
+			[
+				defenv['ZSTD_W32'],
+				os.path.join(defenv['ZSTD_W32'], 'include')
+			]
+		)
+	))
+	for importlib in ['libzstd.dll.a', 'libzstd.a', 'zstd.lib']:
+		defenv['ZSTD_W32_LIB'] = os.path.dirname(str(
+			defenv.FindFile(importlib,
+				[
+					defenv['ZSTD_W32'],
+					os.path.join(defenv['ZSTD_W32'], 'lib')
+				]
+			)
+		))
+		if defenv['ZSTD_W32_LIB']:
+			break
+	defenv['ZSTD_W32_DLL'] = defenv.FindFile('libzstd.dll',
+		[defenv['ZSTD_W32'], defenv['ZSTD_W32_LIB']])
 
 tools = defenv['TOOLS']
 

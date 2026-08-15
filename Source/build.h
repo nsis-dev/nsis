@@ -51,6 +51,7 @@
 #include "czlib.h"
 #include "cbzip2.h"
 #include "clzma.h"
+#include "czstd.h"
 #endif //~ NSIS_CONFIG_COMPRESSION_SUPPORT
 
 #ifdef NSIS_CONFIG_PLUGIN_SUPPORT
@@ -591,6 +592,7 @@ class CEXEBuild {
     CZlib zlib_compressor;
     CBzip2 bzip2_compressor;
     CLZMA lzma_compressor;
+    CZstd zstd_compressor;
 #endif
     bool build_compressor_set;
     bool build_compressor_final;

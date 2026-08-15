@@ -50,6 +50,34 @@ lzma_files = Split("""
 	7zip/Common/CRC.cpp
 """)
 
+zstd_files = Split("""
+	zstd/lib/common/entropy_common.c
+	zstd/lib/common/error_private.c
+	zstd/lib/common/fse_decompress.c
+	zstd/lib/common/pool.c
+	zstd/lib/common/threading.c
+	zstd/lib/common/xxhash.c
+	zstd/lib/common/zstd_common.c
+	zstd/lib/compress/fse_compress.c
+	zstd/lib/compress/hist.c
+	zstd/lib/compress/huf_compress.c
+	zstd/lib/compress/zstd_compress.c
+	zstd/lib/compress/zstd_compress_literals.c
+	zstd/lib/compress/zstd_compress_sequences.c
+	zstd/lib/compress/zstd_compress_superblock.c
+	zstd/lib/compress/zstd_double_fast.c
+	zstd/lib/compress/zstd_fast.c
+	zstd/lib/compress/zstd_lazy.c
+	zstd/lib/compress/zstd_ldm.c
+	zstd/lib/compress/zstd_opt.c
+	zstd/lib/compress/zstd_preSplit.c
+	zstd/lib/compress/zstdmt_compress.c
+""")
+
+dynamiccondvars_files = Split("""
+	DynamicCondVars.c
+""")
+
 libs = Split("""
 	gdi32
 	user32
@@ -61,7 +89,7 @@ libs = Split("""
 	shell32
 """)
 
-Import('env AddAvailableLibs AddZLib')
+Import('env AddAvailableLibs AddZLib AddZstd')
 
 ##### Use available libraries
 
@@ -72,6 +100,7 @@ if env['PLATFORM'] == 'win32':
 
 AddAvailableLibs(env, libs)
 AddZLib(env, env['PLATFORM'], 'install-compiler')
+use_external_zstd = AddZstd(env, env['PLATFORM'], 'install-compiler')
 
 ##### Defines
 
@@ -92,7 +121,13 @@ lzma_files = lzma_env.Object(lzma_files)
 
 ##### Compile makensis
 
-files = makensis_files + bzip2_files + lzma_files
+files = makensis_files + bzip2_files + lzma_files + dynamiccondvars_files
+
+if use_external_zstd:
+	env.Append(CPPDEFINES = ['ZSTD_MULTITHREAD'])
+else:
+	env.Append(CPPDEFINES = ['ZSTD_MULTITHREAD'])
+	files += zstd_files
 
 makensis = env.Program(target, files)
 

@@ -64,6 +64,40 @@ zlib_exehead_files = Split("""
 
 required_exehead += zlib_exehead_files
 
+zstd_files = Split("""
+	zstd/lib/common/entropy_common.c
+	zstd/lib/common/error_private.c
+	zstd/lib/common/fse_decompress.c
+	zstd/lib/common/pool.c
+	zstd/lib/common/threading.c
+	zstd/lib/common/xxhash.c
+	zstd/lib/common/zstd_common.c
+	zstd/lib/compress/fse_compress.c
+	zstd/lib/compress/hist.c
+	zstd/lib/compress/huf_compress.c
+	zstd/lib/compress/zstd_compress.c
+	zstd/lib/compress/zstd_compress_literals.c
+	zstd/lib/compress/zstd_compress_sequences.c
+	zstd/lib/compress/zstd_compress_superblock.c
+	zstd/lib/compress/zstd_double_fast.c
+	zstd/lib/compress/zstd_fast.c
+	zstd/lib/compress/zstd_lazy.c
+	zstd/lib/compress/zstd_ldm.c
+	zstd/lib/compress/zstd_opt.c
+	zstd/lib/compress/zstd_preSplit.c
+	zstd/lib/compress/zstdmt_compress.c
+""")
+
+zstd_exehead_files = Split("""
+	zstd/lib/decompress/zstd_decompress.c
+	zstd/lib/decompress/zstd_decompress_block.c
+	zstd/lib/decompress/zstd_ddict.c
+	zstd/lib/decompress/huf_decompress.c
+""")
+
+required += zstd_files
+required_exehead += zstd_exehead_files
+
 cppunitlibs = Split("""
 	cppunit
 """)
@@ -107,6 +141,9 @@ env.Append(CCFLAGS = ['$EXCEPTION_FLAG'])
 
 # for lzma
 env.Append(CPPDEFINES = ['COMPRESS_MF_BT'])
+
+# for zstd
+env.Append(CPPDEFINES = ['DYNAMIC_BMI2=0'])
 
 # test for CppUnit
 conf = env.Configure()

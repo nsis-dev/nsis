@@ -79,7 +79,9 @@
     #ifndef NSIS_COMPRESS_USE_ZLIB
       #ifndef NSIS_COMPRESS_USE_BZIP2
         #ifndef NSIS_COMPRESS_USE_LZMA
-          #error compression is enabled but zlib, bzip2 and lzma are disabled.
+          #ifndef NSIS_COMPRESS_USE_ZSTD
+            #error compression is enabled but zlib, bzip2, lzma and zstd are disabled.
+          #endif
         #endif
       #endif
     #endif
@@ -92,10 +94,21 @@
     #ifdef NSIS_COMPRESS_USE_LZMA
       #error both zlib and lzma are enabled.
     #endif
+    #ifdef NSIS_COMPRESS_USE_ZSTD
+      #error both zlib and zstd are enabled.
+    #endif
   #endif
   #ifdef NSIS_COMPRESS_USE_BZIP2
     #ifdef NSIS_COMPRESS_USE_LZMA
       #error both bzip2 and lzma are enabled.
+    #endif
+    #ifdef NSIS_COMPRESS_USE_ZSTD
+      #error both bzip2 and zstd are enabled.
+    #endif
+  #endif
+  #ifdef NSIS_COMPRESS_USE_LZMA
+    #ifdef NSIS_COMPRESS_USE_ZSTD
+      #error both lzma and zstd are enabled.
     #endif
   #endif
 
