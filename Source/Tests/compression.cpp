@@ -10,6 +10,7 @@
 #include "../cbzip2.h"
 #include "../clzma.h"
 #include "../czlib.h"
+#include "../czstd.h"
 
 class CompressionTest : public CppUnit::TestFixture {
 
@@ -87,17 +88,17 @@ public:
   }
 
   void testCompressDecompress(ICompressor &compressor, IDecompressor& decompressor) {
-    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(9, 1 << 23) );
+    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(9, 1 << 23, 1024) );
     testCompressDecompress(1, compressor, decompressor);
 
-    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(9, 1 << 23) );
+    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(9, 1 << 23, 1024*1024) );
     testCompressDecompress(1024, compressor, decompressor);
 
 #ifndef NSIS_TESTS_FASTCOMPRESSIONONLY
-    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(9, 1 << 23) );
+    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(9, 1 << 23, 8*1024*1024) );
     testCompressDecompress(8*1024, compressor, decompressor);
 
-    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(9, 1 << 23) );
+    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(9, 1 << 23, 32*1024*1024) );
     testCompressDecompress(32*1024, compressor, decompressor);
 #endif
   }
@@ -155,6 +156,24 @@ public:
 
 };
 
+class zstdCompressionTest : public CompressionTest {
+
+  CPPUNIT_TEST_SUITE( zstdCompressionTest );
+  CPPUNIT_TEST( test );
+  CPPUNIT_TEST_SUITE_END();
+
+public:
+
+  void test() {
+    CZstd compressor;
+    zstdDecompressor decompressor;
+
+    testCompressDecompress(compressor, decompressor);
+  }
+
+};
+
 CPPUNIT_TEST_SUITE_REGISTRATION( bzip2CompressionTest );
 CPPUNIT_TEST_SUITE_REGISTRATION( lzmaCompressionTest );
 CPPUNIT_TEST_SUITE_REGISTRATION( zlibCompressionTest );
+CPPUNIT_TEST_SUITE_REGISTRATION( zstdCompressionTest );

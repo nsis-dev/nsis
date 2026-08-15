@@ -53,6 +53,56 @@
 #define Z_OK BZ_OK
 #define Z_STREAM_END BZ_STREAM_END
 #endif//NSIS_COMPRESS_USE_BZIP2
+
+#ifdef NSIS_COMPRESS_USE_ZSTD
+
+#include "../zstd/lib/zstd.h"
+
+#define z_stream ZStdContext
+#define Z_OK 0
+#define Z_ERR -1
+#define Z_STREAM_END 1
+
+typedef struct ZStdContext_s {
+  ZSTD_DStream*   dstream;
+  ZSTD_outBuffer  outBuffer;
+  ZSTD_inBuffer   inBuffer;
+  unsigned char*  next_in;
+  unsigned int    avail_in;
+  unsigned char*  next_out;
+  unsigned int    avail_out;
+} ZStdContext;
+
+int inflate(ZStdContext* ctx)
+{
+  ctx->inBuffer.src = ctx->next_in;
+  ctx->inBuffer.size = ctx->avail_in;
+  ctx->inBuffer.pos = 0;
+  ctx->outBuffer.dst = ctx->next_out;
+  ctx->outBuffer.size = ctx->avail_out;
+  ctx->outBuffer.pos = 0;
+  size_t ret = ZSTD_decompressStream(ctx->dstream, &ctx->outBuffer, &ctx->inBuffer);
+  ctx->avail_in = ctx->inBuffer.size - ctx->inBuffer.pos;
+  ctx->next_in = (unsigned char*)ctx->inBuffer.src + ctx->inBuffer.pos;
+  ctx->avail_out = ctx->outBuffer.size - ctx->outBuffer.pos;
+  ctx->next_out = (unsigned char*)ctx->outBuffer.dst + ctx->outBuffer.pos;
+  if (ret == 0) return Z_STREAM_END;
+  if (ZSTD_isError(ret)) return Z_ERR;
+  return Z_OK;
+}
+
+void inflateReset(ZStdContext* ctx)
+{
+  if (!ctx->dstream)
+  {
+    ctx->dstream = ZSTD_createDStream();
+    ZSTD_DCtx_setParameter(ctx->dstream, ZSTD_d_format, ZSTD_f_zstd1_magicless);
+  }
+  ZSTD_initDStream(ctx->dstream);
+}
+
+#endif//NSIS_COMPRESS_USE_ZSTD
+
 #endif//NSIS_CONFIG_COMPRESSION_SUPPORT
 
 struct block_header g_blocks[BLOCKS_NUM];
@@ -362,8 +412,13 @@ retry:
   return 0;
 }
 
-#define IBUFSIZE 16384
-#define OBUFSIZE 32768
+#ifdef NSIS_COMPRESS_USE_ZSTD
+  #define IBUFSIZE ZSTD_BLOCKSIZE_MAX + 3
+  #define OBUFSIZE ZSTD_BLOCKSIZE_MAX
+#else
+  #define IBUFSIZE 16384
+  #define OBUFSIZE 32768
+#endif
 
 // returns -3 if compression error/eof/etc
 

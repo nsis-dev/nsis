@@ -34,6 +34,19 @@ zlib_files = Split("""
 	#Source/zlib/INFBLOCK.C
 """)
 
+zstd_files = Split("""
+	crt_replacements.c
+	#Source/zstd/lib/decompress/zstd_decompress.c
+	#Source/zstd/lib/decompress/zstd_decompress_block.c
+	#Source/zstd/lib/decompress/zstd_ddict.c
+	#Source/zstd/lib/decompress/huf_decompress.c
+	#Source/zstd/lib/common/entropy_common.c
+	#Source/zstd/lib/common/fse_decompress.c
+	#Source/zstd/lib/common/error_private.c
+	#Source/zstd/lib/common/xxhash.c
+	#Source/zstd/lib/common/zstd_common.c
+""")
+
 libs = Split("""
 	advapi32
 	shell32
@@ -74,6 +87,11 @@ elif compression == 'zlib':
 	env.Append(CPPDEFINES = ['NSIS_COMPRESS_USE_ZLIB'])
 	env.Append(CPPDEFINES = ['ZEXPORT=__stdcall'])
 	files += zlib_files
+elif compression == 'zstd':
+	env.Append(CPPDEFINES = ['NSIS_COMPRESS_USE_ZSTD'])
+	env.Append(CPPDEFINES = ['ZSTD_STATIC_LINKING_ONLY'])
+	env.Append(CPPDEFINES = ['ZSTD_NO_UNUSED_FUNCTIONS'])
+	files += zstd_files
 
 if solid_compression:
 	env.Append(CPPDEFINES = ['NSIS_COMPRESS_WHOLE'])

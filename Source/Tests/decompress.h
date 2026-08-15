@@ -1,3 +1,5 @@
+#include "../zstd/lib/zstd.h"
+
 class IDecompressor {
 public:
 
@@ -63,4 +65,24 @@ private:
 
   void *vs;
 
+};
+
+class zstdDecompressor : public IDecompressor {
+public:
+
+  zstdDecompressor();
+  virtual ~zstdDecompressor();
+
+  virtual void init();
+  virtual void setNextIn(void *buffer, int size);
+  virtual void setNextOut(void *buffer, int size);
+  virtual int getAvailOut();
+  virtual int decompress();
+
+private:
+
+  ZSTD_DStream *ctx;
+  ZSTD_outBuffer output;
+  ZSTD_inBuffer input;
+  
 };

@@ -43,21 +43,37 @@ Note that this option has no effect when solid compression is used.
 
 \S2{asetcompressor} SetCompressor
 
-\c [/SOLID] [/FINAL] \\<b\\>zlib\\</b\\>|bzip2|lzma
+\c [/SOLID] [/FINAL] \\<b\\>zlib\\</b\\>|bzip2|lzma|zstd
 
 This command sets the compression algorithm used to compress files/data in the installer. It can only be used outside of sections and functions and before any data is compressed. Different compression methods can not be used for different files in the same installer. It is recommended to use it at the very top of the script to avoid compilation errors.
 
-Three compression methods are supported: ZLIB, BZIP2 and LZMA.
+Four compression methods are supported: ZLIB, BZIP2, ZSTD and LZMA.
 
 ZLIB (the default) uses the deflate algorithm, it is a quick and simple method. With the default compression level it uses about 300 KB of memory.
 
-BZIP2 usually gives better compression ratios than ZLIB, but it is a bit slower and uses more memory. With the default compression level it uses about 4 MB of memory.
+BZIP2 usually gives better compression ratios than ZLIB, but it is a bit slower and uses 4MB of memory.
 
-LZMA is a new compression method that gives very good compression ratios. The decompression speed is high (10-20 MB/s on a 2 GHz CPU), the compression speed is lower. The memory size that will be used for decompression is the dictionary size plus a few KBs, the default is 8 MB.
+ZSTD typically gives better compression ratios than BZIP2, offers very fast decompression speed (typically 100-200 MB/s) and uses 2-10MB of memory. Compression speed is high, but depends on the compression level, which can be set using \R{asetcompressionlevel}{SetCompressionLevel}. ZSTD compression can make use of all CPU cores when compressing large files or when using \e{/SOLID} compression.
 
-If \e{/FINAL} is used, subsequent calls to  \R{asetcompressor}{SetCompressor} will be ignored.
+LZMA gives the best compression ratios. The decompression speed is relatively high (50 MB/s on a modern CPU), the compression speed is lower. The memory size that will be used for decompression is the dictionary size plus a few KBs, the default is 8 MB.
+
+If \e{/FINAL} is used, subsequent calls to \R{asetcompressor}{SetCompressor} will be ignored.
 
 If \e{/SOLID} is used, all of the installer data is compressed in one block. This results in greater compression ratios.
+
+\S2{asetcompressionlevel} SetCompressionLevel
+
+\c level
+
+This command allows to change the compression level of some algorithms used to compress files/data in the installer. Lower levels compress faster, but result in bigger installers. Decompression speed is mostly unaffected by selected compression level.
+
+The default level is 9.
+
+ZSTD offers levels 1 to 19. Compression at levels above 17 is fairly slow, and switching to LZMA is usually the better option. The lower levels compress extremely fast (100-500 MB/s) but result in lower compression than BZIP2. At the highest compression levels, it can use several 100MB of memory to build the installer.
+
+ZLIB offers levels 1 to 9. Consider switching to ZSTD instead of lowering the default level for higher speed.
+
+The compression strength of BZIP2 can not be changed and the strength of LZMA is controlled using \R{asetcompressordictsize}{SetCompressorDictSize}.
 
 \S2{asetcompressordictsize} SetCompressorDictSize
 

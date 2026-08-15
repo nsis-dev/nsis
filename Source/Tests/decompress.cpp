@@ -26,6 +26,10 @@ extern "C" {
 #define NSIS_COMPRESS_USE_ZLIB
 #include "../zlib/ZLIB.H"
 #undef NSIS_COMPRESS_USE_ZLIB
+
+#define ZSTD_STATIC_LINKING_ONLY
+#include "../zstd/lib/zstd.h"
+#include "../zstd/lib/zstd_errors.h"
 }
 
 #define DECOMPRESSOR(name, type, initf, dec, u)   \
@@ -69,3 +73,37 @@ extern "C" {
 DECOMPRESSOR(lzmaDecompressor, lzma_stream, lzmaInit, lzmaDecode, unsigned char);
 DECOMPRESSOR(bzip2Decompressor, DState, BZ2_bzDecompressInit, BZ2_bzDecompress, unsigned char);
 DECOMPRESSOR(zlibDecompressor, z_stream, inflateReset, inflate, unsigned char);
+
+zstdDecompressor::zstdDecompressor() { ctx = ZSTD_createDStream(); }
+
+zstdDecompressor::~zstdDecompressor() { ZSTD_freeDStream(ctx); }
+
+void zstdDecompressor::setNextIn(void *buffer, int size)
+{
+  input.src = buffer;
+  input.size = size;
+  input.pos = 0;
+}
+
+void zstdDecompressor::setNextOut(void *buffer, int size)
+{
+  output.dst = buffer;
+  output.size = size;
+  output.pos = 0;
+}
+
+int zstdDecompressor::getAvailOut() { return output.size - output.pos; }
+
+void zstdDecompressor::init()
+{ 
+  ZSTD_DCtx_reset(ctx, ZSTD_reset_session_only);
+  ZSTD_DCtx_setParameter(ctx, ZSTD_d_format, ZSTD_f_zstd1_magicless);
+}
+
+int zstdDecompressor::decompress()
+{
+  size_t ret = ZSTD_decompressStream(ctx, &output, &input);
+  if (ret == 0) return 1;
+  if (ZSTD_isError(ret)) return -ZSTD_getErrorCode(ret);
+  return 0;
+}

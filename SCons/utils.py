@@ -297,4 +297,32 @@ def MakeReproducibleAction(target, source, env):
 def SilentActionEcho(target, source, env):
 	return None
 
-Export('GetStdSysEnvVarList AddAvailableLibs AddZLib GenerateTryLinkCode FlagsConfigure GetAvailableLibs GetOptionOrEnv SilentActionEcho IsPEExecutable SetPESecurityFlagsWorker SetPEMinOS MakeReproducibleAction')
+def AddZstd(env, platform, alias='install-utils'):
+	"""
+	Checks for platform specific zstd and adds the
+	appropriate compiler and linker options to the environment.
+	Returns True if external zstd is used, False if bundled source should be used.
+	"""
+	zstd = 'zstd'
+	if platform == 'win32':
+		if 'ZSTD_W32' in env:
+			env.Append(CPPPATH = env['ZSTD_W32_INC'])
+			env.Append(LIBPATH = env['ZSTD_W32_LIB'])
+			zstd = ['libzstd', 'zstd']
+			if 'ZSTD_W32_DLL' in env and env['ZSTD_W32_DLL']:
+				env.DistributeW32Bin(env['ZSTD_W32_DLL'], alias=alias)
+			return True
+		else:
+			return False
+	else:
+		if not env.GetOption('clean'):
+			conf = env.Configure()
+			if conf.CheckLibWithHeader(zstd, 'zstd.h', 'c'):
+				env = conf.Finish()
+				return True
+			else:
+				env = conf.Finish()
+				return False
+		return False
+
+Export('GetStdSysEnvVarList AddAvailableLibs AddZLib AddZstd GenerateTryLinkCode FlagsConfigure GetAvailableLibs GetOptionOrEnv SilentActionEcho IsPEExecutable SetPESecurityFlagsWorker SetPEMinOS MakeReproducibleAction')

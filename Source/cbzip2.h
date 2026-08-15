@@ -26,7 +26,7 @@ class CBzip2 : public ICompressor {
   public:
     virtual ~CBzip2() {}
 
-    virtual int Init(int level, unsigned int dict_size) {
+    virtual int Init(int level, unsigned int dict_size, unsigned int dataSize) {
       last_ret = !BZ_STREAM_END;
       stream = new bz_stream;
       if (!stream) return BZ_MEM_ERROR;

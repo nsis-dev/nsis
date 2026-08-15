@@ -61,7 +61,9 @@ BEGIN
     CONTROL         "LZMA",IDC_LZMA,"Button",BS_AUTORADIOBUTTON | WS_GROUP| WS_TABSTOP,78,228,36,10
     CONTROL         "BZip2",IDC_BZIP2,"Button",BS_AUTORADIOBUTTON,132,228,36,
                     10
-    CONTROL         "ZLib",IDC_ZLIB,"Button",BS_AUTORADIOBUTTON,186,228,30,
+    CONTROL         "ZSTD",IDC_ZSTD,"Button",BS_AUTORADIOBUTTON,186,228,30,
+                    10
+    CONTROL         "ZLib",IDC_ZLIB,"Button",BS_AUTORADIOBUTTON,222,228,30,
                     10
     CONTROL         "Solid",IDC_SOLID,"Button",BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,240,228,30,
                     10

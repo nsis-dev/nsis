@@ -25,7 +25,7 @@ You can create a single installer that is compatible with Windows 95, 98, ME, NT
 
 \\<b\\>Unique compression methods\\</b\\>
 
-You can choose between three different integrated compression methods (ZLib, BZip2, LZMA). LZMA compression gives better results than any other common compression method. You don't have to use large self-extracting archive modules or other applications, the compression support is included in the 34 KB overhead.
+You can choose between four different integrated compression methods (ZLib, BZip2, LZMA, ZSTD). LZMA compression gives better results than any other common compression method. You don't have to use large self-extracting archive modules or other applications, the compression support is included in the 34 KB overhead.
 
 \\<b\\>Script based\\</b\\>
 
@@ -63,7 +63,7 @@ The NSIS script format and the format used for interface dialogs are easy, docum
 
 \b Generates self contained executable installers
 
-\b Support for ZLIB, BZIP2 and LZMA data compression (files can be compressed individually or together) 
+\b Support for ZLIB, BZIP2, ZSTD and LZMA data compression (files can be compressed individually or together) 
 
 \b Uninstall support (installer can generate an uninstaller) 
 
