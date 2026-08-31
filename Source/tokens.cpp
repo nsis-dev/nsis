@@ -265,6 +265,7 @@ static tokenType tokenlist[TOK__LAST] =
 {TOK_PESUBSYSVER,_T("PESubsysVer"),1,0,_T("major.minor"),TP_GLOBAL},
 {TOK_XPSTYLE,_T("XPStyle"),1,0,_T("(on|off)"),TP_GLOBAL},
 {TOK_REQEXECLEVEL,_T("RequestExecutionLevel"),1,0,_T("none|user|highest|admin"),TP_GLOBAL},
+{TOK_REQUNINSTEXECLEVEL,_T("RequestUninstallerExecutionLevel"),1,0,_T("none|user|highest|admin"),TP_GLOBAL},
 {TOK_MANIFEST_APPENDCUSTOMSTRING,_T("ManifestAppendCustomString"),2,0,_T("path string"),TP_GLOBAL},
 {TOK_MANIFEST_DPIAWARE,_T("ManifestDPIAware"),1,0,_T("notset|true|false"),TP_GLOBAL},
 {TOK_MANIFEST_DPIAWARENESS,_T("ManifestDPIAwareness"),1,0,_T("comma_separated_string"),TP_GLOBAL},
