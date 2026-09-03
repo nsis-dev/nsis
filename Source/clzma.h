@@ -82,7 +82,7 @@ public:
   CLZMA();
   virtual ~CLZMA();
 
-  virtual int Init(int level, unsigned int dicSize);
+  virtual int Init(int level, unsigned int dicSize, unsigned int dataSize);
   virtual int End();
   virtual int Compress(bool flush);
 

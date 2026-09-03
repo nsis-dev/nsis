@@ -10,6 +10,10 @@ Released on ???? ??th, ????
 
 \b Updated Italian and Korean
 
+\S2{} Compressors
+
+\b Added Zstandard (zstd) compression support with levels 1-19 (\R{asetcompressionlevel}{SetCompressionLevel})
+
 \S2{} Build System
 
 \b TARGET_ARCH is used as the default makensis target (\W{http://sf.net/p/nsis/patches/314}{patch #314}, \W{http://sf.net/p/nsis/bugs/1294}{bug #1294})

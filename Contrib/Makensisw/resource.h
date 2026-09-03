@@ -23,6 +23,8 @@
 #define IDS_BEST                        24
 #define IDS_LZMA                        25
 #define IDS_LZMA_SOLID                  26
+#define IDS_ZSTD                        27
+#define IDS_ZSTD_SOLID                  28
 #define DLG_MAIN                        101
 #define IDI_ICON                        102
 #define DLG_ABOUT                       103
@@ -134,6 +136,8 @@
 #define IDM_ZOOM_DEC                    543
 #define IDM_ZOOM_RST                    544
 #define IDM_ARP                         545
+#define IDM_ZSTD                        546
+#define IDM_ZSTD_SOLID                  547
 
 
 // Next default values for new objects
@@ -141,7 +145,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        138
-#define _APS_NEXT_COMMAND_VALUE         545
+#define _APS_NEXT_COMMAND_VALUE         548
 #define _APS_NEXT_CONTROL_VALUE         241
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
