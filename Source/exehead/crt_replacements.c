@@ -18,31 +18,44 @@
  */
 
 #include "../Platform.h"
+#include <stddef.h>
 
 #if defined(_MSC_VER)
   #pragma function(memcpy)
+  #pragma function(memset)
+  #pragma function(memmove)
 #endif
+
 void *memcpy(void *dest, const void *src, size_t count)
 {
-  char *dest8 = (char *)dest;
-  const char *src8 = (const char *)src;
-  while (count--) *dest8++ = *src8++;
+  char *d = (char *)dest;
+  const char *s = (const char *)src;
+  /* Copy word-at-a-time when both sides are aligned; zstd decompression
+   * is memcpy-heavy so the old byte loop cost real extraction speed. */
+  if (count >= 4 * sizeof(size_t)
+      && (((size_t)d & (sizeof(size_t) - 1)) == 0)
+      && (((size_t)s & (sizeof(size_t) - 1)) == 0))
+  {
+    size_t *dw = (size_t *)d;
+    const size_t *sw = (const size_t *)s;
+    size_t n = count / sizeof(size_t);
+    while (n--) *dw++ = *sw++;
+    d = (char *)dw;
+    s = (const char *)sw;
+    count %= sizeof(size_t);
+  }
+  while (count--) *d++ = *s++;
   return dest;
 }
 
-#ifndef _MSC_VER
 void *memset(void *mem, int c, size_t len)
 {
   char *p = (char *)mem;
-  while (len-- > 0) *p++ = (char)c;
+  while (len--) *p++ = (char)c;
   return mem;
 }
-#endif
 
-#if defined(_MSC_VER)
-  #pragma function(memmove)
-#endif
-void *memmove(void *dest, const void *src, unsigned int n)
+void *memmove(void *dest, const void *src, size_t n)
 {
   char *pcDstn = (char *)dest;
   const char *pcSource = (const char *)src;
@@ -55,28 +68,36 @@ void *memmove(void *dest, const void *src, unsigned int n)
 
 void *malloc(size_t size)
 {
+  if (size == 0) size = 1;
   return GlobalAlloc(GPTR, size);
 }
 
 void *calloc(size_t num, size_t size)
 {
-  void *mem = malloc(num * size);
+  void *mem;
+  if (num != 0 && size > (size_t)-1 / num) return NULL; /* overflow */
+  mem = malloc(num * size);
+  if (!mem) return NULL;
   return memset(mem, 0, num * size);
 }
 
 void free(void *ptr)
 {
-  GlobalFree(ptr);
+  if (ptr) GlobalFree(ptr);
 }
 
 void *realloc(void *ptr, size_t size)
 {
-  void *newmem = malloc(size);
-  if (newmem && ptr)
-  {
-    memcpy(newmem, ptr, size);
-    free(ptr);
-  }
+  void *newmem;
+  size_t oldsize, copysize;
+  if (!ptr) return malloc(size);
+  if (size == 0) { free(ptr); return NULL; }
+  newmem = malloc(size);
+  if (!newmem) return NULL; /* keep original block on failure */
+  oldsize = (size_t)GlobalSize(ptr);
+  copysize = oldsize < size ? oldsize : size;
+  if (copysize) memcpy(newmem, ptr, copysize);
+  free(ptr);
   return newmem;
 }
 
@@ -103,23 +124,27 @@ void *realloc(void *ptr, size_t size)
 
 unsigned int nsis_rotl(unsigned int val, int shift) {
   shift &= 31;
+  if (shift == 0) return val;
   return (val << shift) | (val >> (32 - shift));
 }
 
 unsigned __int64 nsis_rotl64(unsigned __int64 val, int shift) {
-  unsigned int p[2];
-  p[0] = (unsigned int)(val);
-  p[1] = (unsigned int)(val >> 32);
+  unsigned int lo = (unsigned int)(val);
+  unsigned int hi = (unsigned int)(val >> 32);
   shift &= 63;
-  if (shift > 0 && shift < 32) {
-    unsigned int t = p[0] >> (32 - shift);
-    p[0] = (p[0] << shift) | (p[1] >> (32 - shift));
-    p[1] = (p[1] << shift) | t;
-  } else if (shift >= 32) {
-    p[1] = p[0] << (shift - 32);
-    p[0] = 0;
+  if (shift == 0) return val;
+  if (shift >= 32) {
+    /* Rotate by 32 is a half swap; fold it in then rotate the rest. */
+    unsigned int t = lo; lo = hi; hi = t;
+    shift -= 32;
+    if (shift == 0) return ((unsigned __int64)hi << 32) | lo;
   }
-  return ((unsigned __int64)p[1] << 32) | p[0];
+  {
+    unsigned int t = lo >> (32 - shift);
+    lo = (lo << shift) | (hi >> (32 - shift));
+    hi = (hi << shift) | t;
+  }
+  return ((unsigned __int64)hi << 32) | lo;
 }
 
 unsigned int nsis_byteswap_ulong(unsigned int val) {
@@ -128,36 +153,49 @@ unsigned int nsis_byteswap_ulong(unsigned int val) {
 }
 
 unsigned __int64 nsis_byteswap_uint64(unsigned __int64 val) {
-  unsigned int v[2];
-  v[0] = nsis_byteswap_ulong((unsigned int)(val));
-  v[1] = nsis_byteswap_ulong((unsigned int)(val >> 32));
-  return ((unsigned __int64)v[1] << 32) | v[0];
+  unsigned int lo = nsis_byteswap_ulong((unsigned int)(val));
+  unsigned int hi = nsis_byteswap_ulong((unsigned int)(val >> 32));
+  return ((unsigned __int64)lo << 32) | hi;
 }
 
 unsigned __int64 nsis_allmul(unsigned __int64 a, unsigned __int64 b) {
-  unsigned int al = (unsigned int)(a), ah = (unsigned int)(a >> 32);
-  unsigned int bl = (unsigned int)(b), bh = (unsigned int)(b >> 32);
-  unsigned int rl = al * bl;
-  unsigned int rh = ah * bl + al * bh;
+  /* 64-bit multiply without using a 64-bit multiply (which would recurse
+   * into __allmul on 32-bit MSVC). 16-bit schoolbook multiply. */
+  unsigned int al0 = (unsigned int)(a) & 0xFFFF;
+  unsigned int al1 = (unsigned int)(a) >> 16;
+  unsigned int bl0 = (unsigned int)(b) & 0xFFFF;
+  unsigned int bl1 = (unsigned int)(b) >> 16;
+  unsigned int lo, mid, m1, m2, rl, rh, t;
+  unsigned int carry_mid, carry_t;
+  lo = al0 * bl0;
+  m1 = al0 * bl1;
+  m2 = al1 * bl0;
+  mid = m1 + m2;
+  carry_mid = (mid < m1) ? 1u : 0u;
+  /* rl = lo + (mid_low << 16) */
+  t = (lo >> 16) + (mid & 0xFFFF);
+  carry_t = t >> 16;
+  rl = (lo & 0xFFFF) | ((t & 0xFFFF) << 16);
+  /* high 32 bits: sub-product high + cross terms (a_lo*b_hi + a_hi*b_lo) */
+  rh = al1 * bl1 + ((mid >> 16) & 0xFFFF) + (carry_mid << 16) + carry_t
+     + (unsigned int)(a) * (unsigned int)(b >> 32)
+     + (unsigned int)(a >> 32) * (unsigned int)(b);
   return ((unsigned __int64)rh << 32) | rl;
 }
 
 unsigned __int64 nsis_allshl(unsigned __int64 val, int shift) {
-  unsigned int p[2];
-  p[0] = (unsigned int)(val);
-  p[1] = (unsigned int)(val >> 32);
+  unsigned int lo = (unsigned int)(val);
+  unsigned int hi = (unsigned int)(val >> 32);
   shift &= 63;
-  if (shift > 0) {
-    if (shift < 32) {
-      unsigned int t = p[0] >> (32 - shift);
-      p[0] = (p[0] << shift) | (p[1] >> (32 - shift));
-      p[1] = (p[1] << shift) | t;
-    } else {
-      p[1] = p[0] << (shift - 32);
-      p[0] = 0;
-    }
+  if (shift == 0) return val;
+  if (shift >= 32) {
+    hi = lo << (shift - 32);
+    lo = 0;
+  } else {
+    hi = (hi << shift) | (lo >> (32 - shift));
+    lo = lo << shift;
   }
-  return ((unsigned __int64)p[1] << 32) | p[0];
+  return ((unsigned __int64)hi << 32) | lo;
 }
 
 #endif /* _MSC_VER */
