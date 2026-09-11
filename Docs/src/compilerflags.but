@@ -71,7 +71,9 @@ The default level is 9.
 
 ZSTD offers levels 1 to 19. Compression at levels above 17 is fairly slow, and switching to LZMA is usually the better option. The lower levels compress extremely fast (100-500 MB/s) but result in lower compression than BZIP2. At the highest compression levels, it can use several 100MB of memory to build the installer.
 
-ZLIB offers levels 1 to 9. Consider switching to ZSTD instead of lowering the default level for higher speed.
+ZLIB offers levels 0 to 9. Consider switching to ZSTD instead of lowering the default level for higher speed.
+
+Levels above the selected compressor's range are clamped to its maximum, so \c SetCompressionLevel can be used before \R{asetcompressor}{SetCompressor}.
 
 The compression strength of BZIP2 can not be changed and the strength of LZMA is controlled using \R{asetcompressordictsize}{SetCompressorDictSize}.
 
@@ -148,7 +150,7 @@ The displayed name of these special entries are translated on the target system,
 \c VIAddVersionKey /LANG=${LANG_ENGLISH} "Comments" "A test comment"
 \c VIAddVersionKey /LANG=${LANG_ENGLISH} "CompanyName" "Fake company"
 \c VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalTrademarks" "Test Application is a trademark of Fake company"
-\c VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "© Fake company"
+\c VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "ï¿½ Fake company"
 \c VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "Test Application"
 \c VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "1.2.3"
 
