@@ -26,6 +26,11 @@
   #pragma function(memmove)
 #endif
 
+/* The stub build supplies its own memcpy.c/memset.c on toolchains whose
+ * CRT can't provide them (see SCons/Config/ms, SCons/Config/gnu); those
+ * builds define _NSIS_NODEFLIB_CRTMEMCPY/_NSIS_NODEFLIB_CRTMEMSET and our
+ * definitions below are skipped to avoid duplicate symbols. */
+#ifndef _NSIS_NODEFLIB_CRTMEMCPY
 void *memcpy(void *dest, const void *src, size_t count)
 {
   char *d = (char *)dest;
@@ -47,13 +52,16 @@ void *memcpy(void *dest, const void *src, size_t count)
   while (count--) *d++ = *s++;
   return dest;
 }
+#endif /* _NSIS_NODEFLIB_CRTMEMCPY */
 
+#ifndef _NSIS_NODEFLIB_CRTMEMSET
 void *memset(void *mem, int c, size_t len)
 {
   char *p = (char *)mem;
   while (len--) *p++ = (char)c;
   return mem;
 }
+#endif /* _NSIS_NODEFLIB_CRTMEMSET */
 
 void *memmove(void *dest, const void *src, size_t n)
 {
