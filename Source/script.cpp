@@ -2768,9 +2768,10 @@ int CEXEBuild::doCommand(int which_token, LineParser &line)
 
       int s;
       build_compress_level=line.gettoken_int(1,&s);
-      if (!s || build_compress_level < 1) PRINTHELP();
-      if (compressor == &zstd_compressor && build_compress_level > 19) PRINTHELP();
-      if (compressor == &zlib_compressor && build_compress_level > 9) PRINTHELP();
+      /* Accept 0-19 regardless of the currently selected compressor so
+       * SetCompressionLevel works before SetCompressor too; each
+       * compressor clamps to its own range in Init(). */
+      if (!s || build_compress_level < 0 || build_compress_level > 19) PRINTHELP();
       SCRIPT_MSG(_T("SetCompressionLevel: %u\n"), build_compress_level);
     }
     return PS_OK;

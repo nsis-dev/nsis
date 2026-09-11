@@ -27,6 +27,12 @@ class CZlib : public ICompressor {
     virtual ~CZlib() {}
 
     virtual int Init(int level, unsigned int dict_size, unsigned int dataSize) {
+      (void)dict_size;
+      (void)dataSize;
+      /* Clamp: a level stored while another compressor was selected
+       * (SetCompressionLevel allows 0-19) must not fail the build. */
+      if (level < 0) level = 0;
+      if (level > 9) level = 9;
       stream = new z_stream;
       if (!stream) return Z_MEM_ERROR;
 

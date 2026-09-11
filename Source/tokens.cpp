@@ -202,7 +202,7 @@ static tokenType tokenlist[TOK__LAST] =
 {TOK_SETCOMPRESS,_T("SetCompress"),1,0,_T("(off|auto|force)"),TP_ALL},
 {TOK_SETCOMPRESSOR,_T("SetCompressor"),1,2,_T("[/FINAL] [/SOLID] (zlib|bzip2|lzma|zstd)"),TP_GLOBAL},
 {TOK_SETCOMPRESSORDICTSIZE,_T("SetCompressorDictSize"),1,0,_T("dict_size_mb"),TP_ALL},
-{TOK_SETCOMPRESSIONLEVEL,_T("SetCompressionLevel"),1,0,_T("level\n    zlib: 1-9, zstd: 1-19"),TP_ALL},
+{TOK_SETCOMPRESSIONLEVEL,_T("SetCompressionLevel"),1,0,_T("level\n    zlib: 0-9, zstd: 1-19"),TP_ALL},
 {TOK_SETDATESAVE,_T("SetDateSave"),1,0,_T("(off|on)"),TP_ALL},
 {TOK_SETDETAILSVIEW,_T("SetDetailsView"),1,0,_T("(hide|show)"),TP_CODE},
 {TOK_SETDETAILSPRINT,_T("SetDetailsPrint"),1,0,_T("(none|listonly|textonly|both|lastused)"),TP_CODE},
