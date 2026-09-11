@@ -25,9 +25,24 @@
 #include <sys/sysctl.h>
 #endif
 
+#if defined(__linux__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(__CYGWIN__) || defined(__FreeBSD__)
+#include <unistd.h>
+#endif
+
 #define ZSTD_STATIC_LINKING_ONLY
+#ifdef USE_SYSTEM_ZSTD
+#include <zstd.h>
+#include <zstd_errors.h>
+#else
 #include "zstd/lib/zstd.h"
 #include "zstd/lib/zstd_errors.h"
+#endif
+
+#ifdef _MSC_VER
+#define CZSTD_TLS __declspec(thread)
+#else
+#define CZSTD_TLS __thread
+#endif
 
 class CZstd : public ICompressor {
   public:
@@ -40,19 +55,16 @@ class CZstd : public ICompressor {
 
     virtual int Init(int level, unsigned int dict_size, unsigned int dataSize) {
       size_t res;
+      (void)dict_size; /* zstd derives its window from the level; nothing to do */
+      /* NSIS script levels are 0-19; clamp defensively so a level stored
+       * while another compressor was selected can't fail the build. */
+      if (level < 0) level = 0;
+      if (level > 19) level = 19;
       if (!cstream)
       {
         cstream = ZSTD_createCStream();
         if (!cstream) return -ZSTD_error_memory_allocation;
 
-        #if defined(ZSTD_MULTITHREAD)
-        if (ConditionVarsSupported())
-        {
-          res = ZSTD_CCtx_setParameter(cstream, ZSTD_c_nbWorkers, getCoreCountLogical());
-          if (ZSTD_isError(res)) return -ZSTD_getErrorCode(res);
-        }
-        #endif
-        
         res = ZSTD_CCtx_setParameter(cstream, ZSTD_c_format, ZSTD_f_zstd1_magicless);
         if (ZSTD_isError(res)) return -ZSTD_getErrorCode(res);
       }
@@ -63,8 +75,25 @@ class CZstd : public ICompressor {
       res = ZSTD_CCtx_setParameter(cstream, ZSTD_c_compressionLevel, level);
       if (ZSTD_isError(res)) return -ZSTD_getErrorCode(res);
 
+      #if defined(ZSTD_MULTITHREAD)
+      /* Re-applied per frame: worker count depends on the pledged size.
+       * Falls back to single-threaded when condvars are missing (XP) or
+       * the library was built without multithreading support. */
+      if (ConditionVarsSupported())
+      {
+        res = ZSTD_CCtx_setParameter(cstream, ZSTD_c_nbWorkers, getWorkerCount(dataSize));
+        if (ZSTD_isError(res))
+        {
+          res = ZSTD_CCtx_setParameter(cstream, ZSTD_c_nbWorkers, 0);
+          if (ZSTD_isError(res)) return -ZSTD_getErrorCode(res);
+        }
+      }
+      #endif
+
       if (dataSize != C_UNKNOWN_SIZE)
       {
+        /* NB: reset above already cleared any previous pledge, so there
+         * is no stale size when dataSize is unknown. */
         res = ZSTD_CCtx_setPledgedSrcSize(cstream, dataSize);
         if (ZSTD_isError(res)) return -ZSTD_getErrorCode(res);
       }
@@ -73,6 +102,7 @@ class CZstd : public ICompressor {
       return C_OK;
     }
 
+    /* No per-frame cleanup needed; the context is reused across files. */
     virtual int End() { return C_OK; }
 
     virtual int Compress(bool doFinish)
@@ -117,8 +147,9 @@ class CZstd : public ICompressor {
       if (!zstdMessage) return _T("unknown zstd error");
 
       #ifdef UNICODE
-        static TCHAR lastError[257] = { 0 };
+        static CZSTD_TLS TCHAR lastError[257] = { 0 };
         mbstowcs(lastError, zstdMessage, 256);
+        lastError[256] = 0;
         return lastError;
       #else
         return zstdMessage;
@@ -138,6 +169,16 @@ class CZstd : public ICompressor {
       numCores = sysReadCoreCountLogical();
       if (numCores < 1) numCores = 1;
       return numCores;
+    }
+
+    /* Workers besides the calling thread; 0 disables multithreading.
+     * Small inputs skip MT (thread-pool overhead exceeds the gain). */
+    static unsigned int getWorkerCount(unsigned int dataSize)
+    {
+      int cores = getCoreCountLogical();
+      if (cores <= 1) return 0;
+      if (dataSize != C_UNKNOWN_SIZE && dataSize < 256 * 1024) return 0;
+      return (unsigned int)(cores - 1);
     }
 
 #if defined(_WIN32) || defined(WIN32)
