@@ -1,4 +1,12 @@
+#ifndef __NSIS_TESTS_DECOMPRESS_H__
+#define __NSIS_TESTS_DECOMPRESS_H__
+
+#define ZSTD_STATIC_LINKING_ONLY
+#ifdef USE_SYSTEM_ZSTD
+#include <zstd.h>
+#else
 #include "../zstd/lib/zstd.h"
+#endif
 
 class IDecompressor {
 public:
@@ -86,3 +94,5 @@ private:
   ZSTD_inBuffer input;
   
 };
+
+#endif//!__NSIS_TESTS_DECOMPRESS_H__

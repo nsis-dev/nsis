@@ -28,8 +28,13 @@ extern "C" {
 #undef NSIS_COMPRESS_USE_ZLIB
 
 #define ZSTD_STATIC_LINKING_ONLY
+#ifdef USE_SYSTEM_ZSTD
+#include <zstd.h>
+#include <zstd_errors.h>
+#else
 #include "../zstd/lib/zstd.h"
 #include "../zstd/lib/zstd_errors.h"
+#endif
 }
 
 #define DECOMPRESSOR(name, type, initf, dec, u)   \

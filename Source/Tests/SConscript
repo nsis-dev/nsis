@@ -95,9 +95,6 @@ zstd_exehead_files = Split("""
 	zstd/lib/decompress/huf_decompress.c
 """)
 
-required += zstd_files
-required_exehead += zstd_exehead_files
-
 cppunitlibs = Split("""
 	cppunit
 """)
@@ -118,7 +115,7 @@ scripts = Split("""
 	winver.nsi
 """)
 
-Import('env AddAvailableLibs AddZLib')
+Import('env AddAvailableLibs AddZLib AddZstd')
 
 # Test scripts
 env.TestScript(scripts)
@@ -131,6 +128,20 @@ if env['PLATFORM'] == 'win32':
 
 AddAvailableLibs(env, extralibs)
 AddZLib(env, env['PLATFORM'])
+use_external_zstd = AddZstd(env, env['PLATFORM'])
+
+# for zstd (same multithreading mode as makensis itself)
+env.Append(CPPDEFINES = ['ZSTD_MULTITHREAD'])
+# Always needed: CZstd::Init calls ConditionVarsSupported() whenever
+# ZSTD_MULTITHREAD is defined (bundled or system zstd alike).
+required += Split("""
+	DynamicCondVars.c
+""")
+if use_external_zstd:
+	env.Append(CPPDEFINES = ['USE_SYSTEM_ZSTD'])
+else:
+	required += zstd_files
+	required_exehead += zstd_exehead_files
 
 # compile using msvcrt (that's how cppunit.lib is built)
 if 'msvc' in env['TOOLS'] or 'mstoolkit' in env['TOOLS']:
