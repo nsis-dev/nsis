@@ -49,12 +49,17 @@
 #define ZSTD_pthread_mutex_unlock(a)   LeaveCriticalSection((a))
 
 /* condition variable */
+/* NSIS: route through dynamically-loaded wrappers (Source/DynamicCondVars.c)
+ * instead of linking Vista+ imports directly, so multithreaded makensis
+ * still loads on XP. CZstd::Init only enables workers when
+ * ConditionVarsSupported() reports the APIs exist. */
+#include "../../../DynamicCondVars.h"
 #define ZSTD_pthread_cond_t             CONDITION_VARIABLE
-#define ZSTD_pthread_cond_init(a, b)    ((void)(b), InitializeConditionVariable((a)), 0)
+#define ZSTD_pthread_cond_init(a, b)    ((void)(b), NSIS_InitializeConditionVariable((a)), 0)
 #define ZSTD_pthread_cond_destroy(a)    ((void)(a))
-#define ZSTD_pthread_cond_wait(a, b)    SleepConditionVariableCS((a), (b), INFINITE)
-#define ZSTD_pthread_cond_signal(a)     WakeConditionVariable((a))
-#define ZSTD_pthread_cond_broadcast(a)  WakeAllConditionVariable((a))
+#define ZSTD_pthread_cond_wait(a, b)    NSIS_SleepConditionVariableCS((a), (b), INFINITE)
+#define ZSTD_pthread_cond_signal(a)     NSIS_WakeConditionVariable((a))
+#define ZSTD_pthread_cond_broadcast(a)  NSIS_WakeAllConditionVariable((a))
 
 /* ZSTD_pthread_create() and ZSTD_pthread_join() */
 typedef HANDLE ZSTD_pthread_t;

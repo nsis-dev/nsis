@@ -24,22 +24,29 @@
 
 #else
 
+  /* Note: init is not synchronized. ConditionVarsSupported() must first be
+   * called from a single thread (makensis calls it during CZstd::Init,
+   * before zstd spawns its worker pool), after which it is safe to call
+   * the NSIS_* wrappers from any thread. */
   static bool isInitialized = false;
   static bool isAvailable = false;
-  static void (WINAPI *_InitializeConditionVariable)(void*);
-  static void (WINAPI *_WakeConditionVariable)(void*);
-  static void (WINAPI *_WakeAllConditionVariable)(void*);
-  static bool (WINAPI *_SleepConditionVariableCS)(void*, void*, int);
+  typedef void (WINAPI *InitCondVarFn)(void*);
+  typedef void (WINAPI *WakeCondVarFn)(void*);
+  typedef bool (WINAPI *SleepCondVarFn)(void*, void*, int);
+  static InitCondVarFn _InitializeConditionVariable;
+  static WakeCondVarFn _WakeConditionVariable;
+  static WakeCondVarFn _WakeAllConditionVariable;
+  static SleepCondVarFn _SleepConditionVariableCS;
 
   bool ConditionVarsSupported()
   {
     if(isInitialized) return isAvailable;
 
     HMODULE kernel32 = GetModuleHandleA("kernel32");
-    (FARPROC)_InitializeConditionVariable = GetProcAddress(kernel32, "InitializeConditionVariable");
-    (FARPROC)_WakeConditionVariable = GetProcAddress(kernel32, "WakeConditionVariable");
-    (FARPROC)_WakeAllConditionVariable = GetProcAddress(kernel32, "WakeAllConditionVariable");
-    (FARPROC)_SleepConditionVariableCS = GetProcAddress(kernel32, "SleepConditionVariableCS");
+    _InitializeConditionVariable = (InitCondVarFn)(void*)GetProcAddress(kernel32, "InitializeConditionVariable");
+    _WakeConditionVariable = (WakeCondVarFn)(void*)GetProcAddress(kernel32, "WakeConditionVariable");
+    _WakeAllConditionVariable = (WakeCondVarFn)(void*)GetProcAddress(kernel32, "WakeAllConditionVariable");
+    _SleepConditionVariableCS = (SleepCondVarFn)(void*)GetProcAddress(kernel32, "SleepConditionVariableCS");
 
     isAvailable = _InitializeConditionVariable && _WakeConditionVariable && _WakeAllConditionVariable && _SleepConditionVariableCS;
     isInitialized = true;

@@ -18,11 +18,11 @@
 #ifndef ___DYNAMIC_COND_VARS__H___
 #define ___DYNAMIC_COND_VARS__H___
 
-#ifdef __cplusplus
-extern "C"
-#endif
-
 #include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 bool ConditionVarsSupported();
 
@@ -33,6 +33,10 @@ void NSIS_WakeConditionVariable(void* conditionVariable);
 void NSIS_WakeAllConditionVariable(void* conditionVariable);
 bool NSIS_SleepConditionVariableCS(void* conditionVariable, void* criticalSection, int milliseconds);
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif//!___DYNAMIC_COND_VARS__H___
