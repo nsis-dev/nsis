@@ -123,10 +123,12 @@ lzma_files = lzma_env.Object(lzma_files)
 
 files = makensis_files + bzip2_files + lzma_files + dynamiccondvars_files
 
-if use_external_zstd:
-	env.Append(CPPDEFINES = ['ZSTD_MULTITHREAD'])
-else:
-	env.Append(CPPDEFINES = ['ZSTD_MULTITHREAD'])
+# zstdmt needs condition variables; DynamicCondVars.c (above) provides
+# XP-compatible dynamic wrappers, see the note in zstd/lib/common/threading.h.
+env.Append(CPPDEFINES = ['ZSTD_MULTITHREAD'])
+
+if not use_external_zstd:
+	# AddZstd already set up headers/libs + USE_SYSTEM_ZSTD otherwise
 	files += zstd_files
 
 makensis = env.Program(target, files)
