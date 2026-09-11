@@ -98,6 +98,7 @@ void inflateReset(ZStdContext* ctx)
     ctx->dstream = ZSTD_createDStream();
     ZSTD_DCtx_setParameter(ctx->dstream, ZSTD_d_format, ZSTD_f_zstd1_magicless);
   }
+  /* session-only reset: preserves the magicless format above */
   ZSTD_initDStream(ctx->dstream);
 }
 

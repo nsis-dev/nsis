@@ -91,6 +91,9 @@ elif compression == 'zstd':
 	env.Append(CPPDEFINES = ['NSIS_COMPRESS_USE_ZSTD'])
 	env.Append(CPPDEFINES = ['ZSTD_STATIC_LINKING_ONLY'])
 	env.Append(CPPDEFINES = ['ZSTD_NO_UNUSED_FUNCTIONS'])
+	# The BMI2 asm loop (huf_decompress_amd64.S) is not part of the stub
+	# build; disable runtime BMI2 dispatch (same as the unit tests do).
+	env.Append(CPPDEFINES = ['DYNAMIC_BMI2=0'])
 	files += zstd_files
 
 if solid_compression:
