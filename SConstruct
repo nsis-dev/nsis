@@ -580,7 +580,7 @@ if 'ZSTD_W32' in defenv:
 		))
 		if defenv['ZSTD_W32_LIB']:
 			break
-	defenv['ZSTD_W32_DLL'] = defenv.FindFile('libzstd.dll',
+	defenv['ZSTD_W32_DLL'] = defenv.FindFile(['libzstd.dll', 'zstd.dll'],
 		[defenv['ZSTD_W32'], defenv['ZSTD_W32_LIB']])
 
 tools = defenv['TOOLS']
