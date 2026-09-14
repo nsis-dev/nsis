@@ -6,6 +6,10 @@ Released on ???? ??th, ????
 
 \S1{v3.13-cl} Changelog
 
+\S2{} nsDialogs
+
+\b Added JPG, GIF and PNG support to NSD_SetImage and NSD_SetStretchedImage
+
 \S2{} Translations
 
 \b Updated Italian and Korean
