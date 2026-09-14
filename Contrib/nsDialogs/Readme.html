@@ -796,7 +796,7 @@ StrCmp $0 "" ...
 
 <h3><a name="mref-setbitmap"></a><a name="mref-setimage"></a>NSD_SetBitmap</h3>
 <p><code>${NSD_SetBitmap} <i>control_HWND</i> <i>image_path</i> <i>$output_variable</i></code></p>
-<p>Loads a bitmap from <i>image_path</i> and displays it on <i>control_HWND</i> created by <a href="#mref-create">${NSD_CreateBitmap}</a>. The image handle is stored in <i>output_variable</i> and should be freed using <a href="#mref-freebitmap">${NSD_FreeBitmap}</a> once no longer necessary.</p>
+<p>Loads a BMP, JPG, GIF or PNG image from <i>image_path</i> and displays it on <i>control_HWND</i> created by <a href="#mref-create">${NSD_CreateBitmap}</a>. The image handle is stored in <i>output_variable</i> and should be freed using <a href="#mref-freebitmap">${NSD_FreeBitmap}</a> once no longer necessary.</p>
 <p>The image must be extracted to the user's computer prior to calling this macro. A good place to extract images is $PLUGINSDIR.</p>
 <blockquote><pre>!include nsDialogs.nsh
 
@@ -837,7 +837,7 @@ SectionEnd</pre></blockquote>
 
 <h3><a name="mref-setsbitmap"></a><a name="mref-setsimage"></a>NSD_SetStretchedBitmap</h3>
 <p><code>${NSD_SetStretchedBitmap} <i>control_HWND</i> <i>image_path</i> <i>$output_variable</i></code></p>
-<p>Loads and displays a bitmap just like <a href="#mref-setbitmap">${NSD_SetImage}</a> but stretches the image to fit the control.</p>
+<p>Loads and displays a BMP, JPG, GIF or PNG image just like <a href="#mref-setbitmap">${NSD_SetImage}</a> but stretches the image to fit the control.</p>
 
 <h3><a name="mref-clearbitmap"></a><a name="mref-clearimage"></a>NSD_ClearBitmap</h3>
 <p><code>${NSD_ClearBitmap} <i>control_HWND</i></code></p>
