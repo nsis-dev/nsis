@@ -18,6 +18,7 @@
 
 #include "../Platform.h"
 #include <shlobj.h>
+#include <olectl.h>
 #include "fileform.h"
 #include "util.h"
 #include "state.h"
@@ -61,6 +62,88 @@ HRESULT g_hres;
 #endif
 
 static int NSISCALL ExecuteEntry(entry *entry_);
+
+#ifdef NSIS_CONFIG_ENHANCEDUI_SUPPORT
+// Convert OLE-supported file formats to a caller-owned bitmap compatible with STM_SETIMAGE.
+static HBITMAP NSISCALL LoadOLEPictureBitmap(LPCTSTR path, int width, int height)
+{
+  IPicture *picture = NULL;
+  IDispatch *dispatch = NULL;
+  LPOLESTR olepath;
+  VARIANT filename;
+  HBITMAP bitmap = NULL;
+  HDC screen = NULL, target = NULL;
+  HGDIOBJ old;
+  OLE_HANDLE picturehandle;
+  BITMAP source;
+  LONG picturewidth, pictureheight;
+  HRESULT hr, init;
+  DWORD attributes;
+#ifndef _UNICODE
+  WCHAR widepath[NSIS_MAX_STRLEN];
+#endif
+
+  attributes = GetFileAttributes(path);
+  if (attributes == INVALID_FILE_ATTRIBUTES || (attributes & FILE_ATTRIBUTE_DIRECTORY)) return NULL;
+#ifndef _UNICODE
+  if (!MultiByteToWideChar(CP_ACP, 0, path, -1, widepath, COUNTOF(widepath))) return NULL;
+  olepath = widepath;
+#else
+  olepath = (LPOLESTR)path;
+#endif
+
+  init = OleInitialize(NULL);
+  VariantInit(&filename);
+  V_VT(&filename) = VT_BSTR;
+  V_BSTR(&filename) = SysAllocString(olepath);
+  if (V_BSTR(&filename))
+  {
+    hr = OleLoadPictureFileEx(filename, 0, 0, LP_DEFAULT, &dispatch);
+    if (SUCCEEDED(hr))
+      hr = dispatch->lpVtbl->QueryInterface(dispatch, &IID_IPicture, (void**)&picture);
+  }
+  else
+    hr = E_OUTOFMEMORY;
+  VariantClear(&filename);
+  if (dispatch) dispatch->lpVtbl->Release(dispatch);
+  if (SUCCEEDED(hr) &&
+      SUCCEEDED(picture->lpVtbl->get_Width(picture, &picturewidth)) &&
+      SUCCEEDED(picture->lpVtbl->get_Height(picture, &pictureheight)) &&
+      SUCCEEDED(picture->lpVtbl->get_Handle(picture, &picturehandle)) &&
+      GetObject((HGDIOBJ)(ULONG_PTR)picturehandle, sizeof(source), &source) &&
+      (screen = GetDC(NULL)) != NULL)
+  {
+    if (!width) width = source.bmWidth;
+    if (!height) height = source.bmHeight;
+    if (width > 0 && height > 0 &&
+        (target = CreateCompatibleDC(screen)) != NULL &&
+        (bitmap = CreateCompatibleBitmap(screen, width, height)) != NULL)
+    {
+      old = SelectObject(target, bitmap);
+      if (!old || old == HGDI_ERROR)
+        hr = E_FAIL;
+      else
+      {
+        SetStretchBltMode(target, HALFTONE);
+        SetBrushOrgEx(target, 0, 0, NULL);
+        hr = picture->lpVtbl->Render(picture, target, 0, 0, width, height,
+                                     0, pictureheight, picturewidth, -pictureheight, NULL);
+        SelectObject(target, old);
+      }
+      if (FAILED(hr))
+      {
+        DeleteObject(bitmap);
+        bitmap = NULL;
+      }
+    }
+  }
+  if (target) DeleteDC(target);
+  if (screen) ReleaseDC(NULL, screen);
+  if (picture) picture->lpVtbl->Release(picture);
+  if (SUCCEEDED(init)) OleUninitialize();
+  return bitmap;
+}
+#endif
 
 /**
  * If v is negative, then the address to resolve is actually
@@ -869,6 +952,8 @@ static int NSISCALL ExecuteEntry(entry *entry_)
       LPCTSTR imgid = (parm3 & LASIF_STRID) ? GetStringFromParm(0x11) : MAKEINTRESOURCE(parm1);
       GetClientRect(hCtl, &r);
       hNewImage=LoadImage(exeres ? g_hInstance : NULL, imgid, it, fitw*r.right, fith*r.bottom, parm3 & LASIM_LR);
+      if (!hNewImage && IMAGE_BITMAP == it && !exeres && (parm3 & LASIF_LR_LOADFROMFILE))
+        hNewImage=LoadOLEPictureBitmap(imgid, fitw*r.right, fith*r.bottom);
       hPrevImage=(HANDLE)SendMessage(hCtl, STM_SETIMAGE, it, (LPARAM)hNewImage);
       if (hPrevImage && IMAGE_BITMAP == it) DeleteObject(hPrevImage); // Delete the old bitmap
       if (parm0 >= 0) iptrtostr(var0, (INT_PTR)hNewImage); // Optional output handle
