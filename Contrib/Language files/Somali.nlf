@@ -1,0 +1,191 @@
+# Header, don't edit
+NLF v6
+# Start editing here
+# Language ID
+1143
+# Font and size - dash (-) means default
+-
+-
+# Codepage - dash (-) means ASCII code page
+-
+# RTL - anything else than RTL means LTR
+-
+# Translation by mhbaando@gmail.com
+# ^Branding
+Nullsoft Install System %s
+# ^SetupCaption
+$(^Name) Ku Rakib
+# ^UninstallCaption
+$(^Name) Ka Saar
+# ^LicenseSubCaption
+: Aqbalidda Heshiiska
+# ^ComponentsSubCaption
+: Doorashooyinka Rakibidda
+# ^DirSubCaption
+: Galka Rakibidda
+# ^InstallingSubCaption
+: Rakibaya
+# ^CompletedSubCaption
+: La Dhameystiray
+# ^UnComponentsSubCaption
+: Doorashooyinka Ka Saaridda
+# ^UnDirSubCaption
+: Galka Ka Saaridda
+# ^ConfirmSubCaption
+: Xaqiijin
+# ^UninstallingSubCaption
+: Ka Saaraya
+# ^UnCompletedSubCaption
+: La Dhameystiray
+# ^BackBtn
+< &Dib U Noqo
+# ^NextBtn
+&Horey U Soco >
+# ^AgreeBtn
+Waan &Aqbalay
+# ^AcceptBtn
+Waan &Aqbalay Shuruudaha Heshiiska
+# ^DontAcceptBtn
+Ma &Aqbalin Shuruudaha Heshiiska
+# ^InstallBtn
+&Ku Rakib
+# ^UninstallBtn
+&Ka Saar
+# ^CancelBtn
+Jooji
+# ^CloseBtn
+&Xir
+# ^BrowseBtn
+&Baar...
+# ^ShowDetailsBtn
+Muuji &Faahfaahinta
+# ^ClickNext
+Guji Horey U Soco si aad u sii wadato.
+# ^ClickInstall
+Guji Ku Rakib si aad u bilowdo rakibidda.
+# ^ClickUninstall
+Guji Ka Saar si aad u bilowdo ka saaridda barnaamijka.
+# ^Name
+Magac
+# ^Completed
+La Dhameystiray
+# ^LicenseText
+Fadlan dib u eeg heshiiska ka hor inta aan la rakibin $(^NameDA). Hadii aad rabto in aad aqbasho shuruudaha heshiiska, guji Waan Aqbalay.
+# ^LicenseTextCB
+Fadlan dib u eeg heshiiska ka hor inta aan la rakibin $(^NameDA). Hadii aad rabto in aad aqbasho shuruudaha heshiiska, calaamadee sanduuqa hoose. $_CLICK
+# ^LicenseTextRB
+Fadlan dib u eeg heshiiska ka hor inta aan la rakibin $(^NameDA). Hadii aad rabto in aad aqbasho shuruudaha heshiiska, dooro doorashada koowaad ee hoose. $_CLICK
+# ^UnLicenseText
+Fadlan dib u eeg heshiiska ka hor inta aan laga tirtiro $(^NameDA). Hadii aad rabto in aad aqbasho shuruudaha heshiiska, guji Waan Aqbalay.
+# ^UnLicenseTextCB
+Fadlan dib u eeg heshiiska ka hor inta aan laga tirtiro $(^NameDA). Hadii aad rabto in aad aqbasho shuruudaha heshiiska, calaamadee sanduuqa hoose. $_CLICK
+# ^UnLicenseTextRB
+Fadlan dib u eeg heshiiska ka hor inta aan laga tirtiro $(^NameDA). Hadii aad rabto in aad aqbasho shuruudaha heshiiska, dooro doorashada koowaad ee hoose. $_CLICK
+# ^Custom
+Hab Gaar ah
+# ^ComponentsText
+Calaamadee qaybaha aad rabto in la rakibo kana saar calaamadda kuwa aadan rabin. $_CLICK
+# ^ComponentsSubText1
+Dooro nooca rakibidda:
+# ^ComponentsSubText2_NoInstTypes
+Dooro qaybaha la rakibayo:
+# ^ComponentsSubText2
+Ama dooro qaybaha ikhtiyaariga ah ee aad rabto in la rakibo:
+# ^UnComponentsText
+Calaamadee qaybaha aad rabto in laga tirtiro kana saar calaamadda kuwa aadan rabin. $_CLICK
+# ^UnComponentsSubText1
+Dooro nooca ka saaridda:
+# ^UnComponentsSubText2_NoInstTypes
+Dooro qaybaha laga tirtirayo:
+# ^UnComponentsSubText2
+Ama dooro qaybaha ikhtiyaariga ah ee aad rabto in lagaa tirtiro:
+# ^DirText
+Rakibiddu waxay ku rakibmi doontaa $(^NameDA) galka soo socda. Haddii aad rabto gal kale, guji Baar oo dooro gal kale. $_CLICK
+# ^DirSubText
+Galka lagu rakibayo
+# ^DirBrowseText
+Dooro galka lagu rakibayo $(^NameDA):
+# ^UnDirText
+Barnaamijkan waxaa laga tiri doonaa $(^NameDA) galka soo socda. Haddii aad rabto gal kale, guji Baar oo dooro gal kale. $_CLICK
+# ^UnDirSubText
+""
+# ^UnDirBrowseText
+Dooro galka laga tirayo $(^NameDA):
+# ^SpaceAvailable
+"Inta bannaan: "
+# ^SpaceRequired
+"Inta loo baahanyahay: "
+# ^UninstallingText
+$(^NameDA) waxaa laga tiri doonaa galka soo socda. $_CLICK
+# ^UninstallingSubText
+Ka saaridda:
+# ^FileError
+Cilad ayaa dhacday markii faylka la furayay si loo qoro: \r\n\r\n$0\r\n\r\nGuji Jooji si aad u joojiso rakibidda,\r\nIsku day mar kale, ama\r\nIska dhaaf rakibidda.
+# ^FileError_NoIgnore
+Cilad ayaa dhacday markii faylka la furayay si loo qoro: \r\n\r\n$0\r\n\r\nGuji Isku Day Mar Kale si aad mar kale isku daydo, ama\r\nJooji si aad u joojiso rakibidda.
+# ^CantWrite
+"Lama qori karo: "
+# ^CopyFailed
+Nuqulku wuu fashilmay
+# ^CopyTo
+"Halka lagu shubayo nuqulka "
+# ^Registering
+"Diiwaangelin: "
+# ^Unregistering
+"Ka saar diiwaangelinta: "
+# ^SymbolNotFound
+"Lama helin astaan: "
+# ^CouldNotLoad
+"Lama soo dejin karo: "
+# ^CreateFolder
+"Abuur gal: "
+# ^CreateShortcut
+"Abuur habka gaaban: "
+# ^CreatedUninstaller
+"La abuuray barnaamijka ka saaridda: "
+# ^Delete
+"Tirtir fayl: "
+# ^DeleteOnReboot
+"Tirtir marka dib loo daaro compuer-ka: "
+# ^ErrorCreatingShortcut
+"Cilad ayaa dhacday marka la abuurayay habka gaabinta: "
+# ^ErrorCreating
+"Cilad ayaa dhacday marka la abuurayay: "
+# ^ErrorDecompressing
+Cilad ayaa dhacday markii xogta la kala furayay! Setup-ka waa xunyahay?
+# ^ErrorRegistering
+Cilad ayaa dhacday markii DLL la diiwaangelinayay
+# ^ExecShell
+"ExecShell: "
+# ^Exec
+"Fulinta: "
+# ^Extract
+"Kala saar: "
+# ^ErrorWriting
+"Kala saar: cilad ayaa dhacday marka faylka la qorayay "
+# ^InvalidOpcode
+Rakibiddu way xumaatary: opcode aan sax ahayn
+# ^NoOLE
+"OLE lama heli karo: "
+# ^OutputFolder
+"Galka wax soo saarka: "
+# ^RemoveFolder
+"Ka saar gal: "
+# ^RenameOnReboot
+"Magaca ka beddel marka dib loo daaro compuer-ka: "
+# ^Rename
+"Magaca beddel: "
+# ^Skipped
+"Ka bood: "
+# ^CopyDetails
+Nuqul ka samee faahfaahinta Clipboard
+# ^LogInstall
+Diiwaangeli habka rakibidda
+# ^Byte
+B
+# ^Kilo
+ K
+# ^Mega
+ M
+# ^Giga
+ G
