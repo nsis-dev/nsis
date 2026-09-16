@@ -28,6 +28,7 @@ bzip2_files = Split("""
 
 lzma_files = Split("""
 	#Source/7zip/LZMADecode.c
+	#Source/7zip/LzmaSDK/LzmaDec.c
 """)
 
 zlib_files = Split("""
