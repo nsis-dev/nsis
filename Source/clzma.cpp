@@ -17,6 +17,8 @@
  */
 
 #include <algorithm> // for std::min
+#include <stdlib.h>
+#include <string.h>
 #include "clzma.h"
 
 using namespace std;
@@ -123,22 +125,80 @@ void* CLZMA::lzmaCompressThread(void *lpParameter)
   return 0;
 }
 
-int CLZMA::ConvertError(HRESULT result)
+void *CLZMA::SzAlloc(ISzAllocPtr, size_t size)
 {
-  if (result != S_OK)
-  {
-    if (result == E_OUTOFMEMORY)
-      return LZMA_MEM_ERROR;
-    else
-      return LZMA_IO_ERROR;
-  }
-  return C_OK;
+  return size ? malloc(size) : NULL;
 }
 
-CLZMA::CLZMA(): _encoder(NULL)
+void CLZMA::SzFree(ISzAllocPtr, void *address)
 {
-  _encoder = new NCompress::NLZMA::CEncoder();
-  _encoder->SetWriteEndMarkerMode(true);
+  free(address);
+}
+
+SRes CLZMA::Read(ISeqInStreamPtr stream, void *data, size_t *size)
+{
+  CLZMA *self = ((const InputStream *) stream)->owner;
+  size_t requested = *size;
+  *size = 0;
+
+  while (requested)
+  {
+    if (!self->avail_in)
+    {
+      if (self->finish)
+        return SZ_OK;
+      self->GetMoreIO();
+      if (!self->avail_in)
+        return self->finish ? SZ_OK : SZ_ERROR_READ;
+      if (self->compressor_finished)
+        return SZ_ERROR_READ;
+    }
+
+    const size_t count = min(requested, (size_t) self->avail_in);
+    memcpy(data, self->next_in, count);
+    self->avail_in -= (UINT) count;
+    self->next_in += count;
+    data = (BYTE *) data + count;
+    requested -= count;
+    *size += count;
+  }
+  return SZ_OK;
+}
+
+size_t CLZMA::Write(ISeqOutStreamPtr stream, const void *data, size_t size)
+{
+  CLZMA *self = ((const OutputStream *) stream)->owner;
+  const size_t requested = size;
+
+  while (size)
+  {
+    if (!self->avail_out)
+    {
+      self->GetMoreIO();
+      if (!self->avail_out)
+        return requested - size;
+    }
+
+    const size_t count = min(size, (size_t) self->avail_out);
+    memcpy(self->next_out, data, count);
+    self->avail_out -= (UINT) count;
+    self->next_out += count;
+    data = (const BYTE *) data + count;
+    size -= count;
+  }
+  return requested;
+}
+
+CLZMA::CLZMA(): encoder(NULL)
+{
+  allocator.Alloc = SzAlloc;
+  allocator.Free = SzFree;
+  inputStream.vt.Read = Read;
+  inputStream.owner = this;
+  outputStream.vt.Write = Write;
+  outputStream.owner = this;
+  encoder = LzmaEnc_Create(&allocator);
+
 #ifdef _WIN32
   hCompressionThread = NULL;
 #else
@@ -151,8 +211,6 @@ CLZMA::CLZMA(): _encoder(NULL)
   hCompressionThread = 0;
   SetNextOut(NULL, 0);
   SetNextIn(NULL, 0);
-
-  AddRef(); // will be manually deleted, not released
 }
 
 CLZMA::~CLZMA()
@@ -168,22 +226,21 @@ CLZMA::~CLZMA()
     CloseHandle(hIOReadyEvent);
     hIOReadyEvent = NULL;
   }
-  if (_encoder)
+  if (encoder)
   {
-    delete _encoder;
-    _encoder = NULL;
+    LzmaEnc_Destroy(encoder, &allocator, &allocator);
+    encoder = NULL;
   }
 }
 
 int CLZMA::Init(int level, unsigned int dicSize)
 {
   End();
-
   compressor_finished = FALSE;
   finish = FALSE;
   res = C_OK;
 
-  if (!hNeedIOEvent || !hIOReadyEvent)
+  if (!encoder || !hNeedIOEvent || !hIOReadyEvent)
   {
     return LZMA_INIT_ERROR;
   }
@@ -193,26 +250,23 @@ int CLZMA::Init(int level, unsigned int dicSize)
 
   res = C_OK;
 
-  PROPID propdIDs [] =
-  {
-    NCoderPropID::kAlgorithm,
-    NCoderPropID::kDictionarySize,
-    NCoderPropID::kNumFastBytes
-  };
-  const int kNumProps = COUNTOF(propdIDs);
-  PROPVARIANT props[kNumProps];
+  CLzmaEncProps props;
+  LzmaEncProps_Init(&props);
   // NCoderPropID::kAlgorithm
-  props[0].vt = VT_UI4;
-  props[0].ulVal = 2;
+  props.algo = 1;
   // NCoderPropID::kDictionarySize
-  props[1].vt = VT_UI4;
-  props[1].ulVal = dicSize;
+  props.dictSize = dicSize;
   // NCoderPropID::kNumFastBytes
-  props[2].vt = VT_UI4;
-  props[2].ulVal = 64;
-  if (_encoder->SetCoderProperties(propdIDs, props, kNumProps) != 0)
-    return LZMA_INIT_ERROR;
-  return _encoder->SetStreams(this, this, 0, 0) == S_OK ? C_OK : LZMA_INIT_ERROR;
+  props.fb = 64;
+  props.btMode = 1;
+  props.numHashBytes = 4;
+  props.writeEndMark = 1;
+  props.numThreads = 1;
+
+  const SRes result = LzmaEnc_SetProps(encoder, &props);
+  if (result == SZ_ERROR_MEM)
+    return LZMA_MEM_ERROR;
+  return result == SZ_OK ? C_OK : LZMA_INIT_ERROR;
 }
 
 int CLZMA::End()
@@ -251,29 +305,26 @@ int CLZMA::CompressReal()
 {
   try
   {
-    HRESULT hResult = _encoder->WriteCoderProperties(this);
-    if (hResult == S_OK)
+    Byte properties[LZMA_PROPS_SIZE];
+    SizeT propertiesSize = sizeof(properties);
+    SRes result = LzmaEnc_WriteProperties(encoder, properties, &propertiesSize);
+
+    if (result == SZ_OK && Write(&outputStream.vt, properties, propertiesSize) != propertiesSize)
+      result = SZ_ERROR_WRITE;
+    if (result == SZ_OK)
+      result = LzmaEnc_Encode(encoder, &outputStream.vt, &inputStream.vt, NULL,
+                             &allocator, &allocator);
+
+    if (res == C_OK)
     {
-      while (true)
-      {
-        UINT64 inSize, outSize;
-        INT32 finished;
-        hResult = _encoder->CodeOneBlock(&inSize, &outSize, &finished);
-        if (hResult != S_OK && res == C_OK)
-          res = ConvertError(hResult);
-        if (res != C_OK)
-          break;
-        if (finished)
-        {
-          res = C_FINISHED;
-          break;
-        }
-      }
-    }
-    else
-    {
-      if (res == C_OK)
-        res = ConvertError(hResult);
+      if (result == SZ_OK)
+        res = C_FINISHED;
+      else if (result == SZ_ERROR_MEM)
+        res = LZMA_MEM_ERROR;
+      else if (result == SZ_ERROR_READ || result == SZ_ERROR_WRITE)
+        res = compressor_finished ? LZMA_THREAD_ERROR : LZMA_IO_ERROR;
+      else
+        res = LZMA_IO_ERROR;
     }
   }
   catch (...)
@@ -342,76 +393,6 @@ void CLZMA::GetMoreIO()
     compressor_finished = TRUE;
     res = LZMA_THREAD_ERROR;
   }
-}
-
-HRESULT CLZMA::Read(void *data, UINT32 size, UINT32 *processedSize)
-{
-  return ReadPart(data, size, processedSize);
-}
-
-HRESULT CLZMA::ReadPart(void *data, UINT32 size, UINT32 *processedSize)
-{
-  if (processedSize)
-    *processedSize = 0;
-  while (size)
-  {
-    if (!avail_in)
-    {
-      if (finish)
-      {
-        return S_OK;
-      }
-      GetMoreIO();
-      if (!avail_in)
-      {
-        if (finish)
-        {
-          return S_OK;
-        }
-        return E_ABORT;
-      }
-      if (compressor_finished)
-        return E_ABORT;
-    }
-    UINT32 l = min(size, avail_in);
-    memcpy(data, next_in, l);
-    avail_in -= l;
-    size -= l;
-    next_in += l;
-    data = LPBYTE(data) + l;
-    if (processedSize)
-      *processedSize += l;
-  }
-  return S_OK;
-}
-
-HRESULT CLZMA::Write(const void *data, UINT32 size, UINT32 *processedSize)
-{
-  return WritePart(data, size, processedSize);
-}
-
-HRESULT CLZMA::WritePart(const void *data, UINT32 size, UINT32 *processedSize)
-{
-  if (processedSize)
-    *processedSize = 0;
-  while (size)
-  {
-    if (!avail_out)
-    {
-      GetMoreIO();
-      if (!avail_out)
-        return E_ABORT;
-    }
-    UINT32 l = min(size, avail_out);
-    memcpy(next_out, data, l);
-    avail_out -= l;
-    size -= l;
-    next_out += l;
-    data = LPBYTE(data) + l;
-    if (processedSize)
-      *processedSize += l;
-  }
-  return S_OK;
 }
 
 void CLZMA::SetNextIn(char *in, unsigned int size)

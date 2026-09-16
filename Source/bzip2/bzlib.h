@@ -126,8 +126,9 @@ typedef unsigned int    UInt32;
 typedef short           Int16;
 typedef unsigned short  UInt16;
 
-#define True  ((Bool)1)
-#define False ((Bool)0)
+/* Keep these definitions identical to the LZMA SDK's shared boolean macros. */
+#define True 1
+#define False 0
 
 #define AssertD(cond,msg) /* */
 #define AssertH(cond,errcode) /* */

@@ -309,8 +309,7 @@ conf.Finish()
 
 #
 # MSVC 2005 requires the memset CRT function to be present
-# and the stubs might need memcpy (entry struct copy on x64)
-# BUGBUG: The tests are currently broken on x64 and designed to fail!
+# BUGBUG: The memset test is currently broken on x64 and designed to fail!
 #
 
 conf = defenv.Configure(custom_tests = { 'CheckRequirement' : check_requirement })
@@ -322,8 +321,15 @@ switch(sizeof(void*)){case 8:break;case sizeof(void*):return 1;}
 """
 if conf.CheckRequirement('memcpy', memcpy_test):
 	add_file('memcpy.c', 'memcpy')
-	stub_env.Append(CPPDEFINES = ['_NSIS_NODEFLIB_CRTMEMCPY'])
-	stub_uenv.Append(CPPDEFINES = ['_NSIS_NODEFLIB_CRTMEMCPY'])
+else:
+	# The LZMA decoder needs memcpy even when the compiler does not.
+	# Limit this extra dependency to stubs; plugins may define their own.
+	memcpy_file = File('memcpy.c')
+	add_file_to_emitter(stub_env, 'PROGEMITTER', memcpy_file, 'memcpy')
+	add_file_to_emitter(stub_uenv, 'PROGEMITTER', memcpy_file, 'memcpy')
+
+stub_env.Append(CPPDEFINES = ['_NSIS_NODEFLIB_CRTMEMCPY'])
+stub_uenv.Append(CPPDEFINES = ['_NSIS_NODEFLIB_CRTMEMCPY'])
 
 conf.Finish()
 
