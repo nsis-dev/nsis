@@ -362,8 +362,8 @@ retry:
   return 0;
 }
 
-#define IBUFSIZE 16384
-#define OBUFSIZE 32768
+#define IBUFSIZE (256 * 1024)
+#define OBUFSIZE (256 * 1024)
 
 // returns -3 if compression error/eof/etc
 
