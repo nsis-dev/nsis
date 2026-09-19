@@ -1,10 +1,14 @@
 \A{history} Changelog and Release Notes
 
-\H{v3.13} 3.13
+\H{v3.12.1} 3.12.1
 
 Released on ???? ??th, ????
 
-\S1{v3.13-cl} Changelog
+\S1{v3.12.1-cl} Changelog
+
+\S2{} Minor Changes
+
+\b Fixed nsExec::ExecToLog crash (\W{http://sf.net/p/nsis/bugs/1323}{bug #1323})
 
 \S2{} Translations
 

@@ -470,8 +470,8 @@ resizeOutputBuffer:
                 TruncateStringMB(codepage, (LPSTR) bufOutput, pD - bufOutput, bufCh[0]);
               goto waitForProcess;
             }
-            cchAlloc += 1024, cbAlloc = cchAlloc / sizeof(TCHAR);
-            pNewAlloc = GlobalReAlloc(bufOutput, cbAlloc + sizeof(TCHAR),GPTR|GMEM_MOVEABLE); // Include "hidden" space for a \0
+            cchAlloc += 1024, cbAlloc = cchAlloc * sizeof(TCHAR);
+            pNewAlloc = GlobalReAlloc(bufOutput, cbAlloc + sizeof(TCHAR), GPTR|GMEM_MOVEABLE); // Include "hidden" space for a \0
             if (!pNewAlloc) {
               lstrcpy(szRet, _T("error"));
               ignoreData = TRUE;
