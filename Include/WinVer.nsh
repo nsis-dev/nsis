@@ -686,7 +686,8 @@
   !insertmacro WinVer_WaaS "${id}" 22631 23H2 "Sun Valley 3"  "2023 Update"
   !insertmacro WinVer_WaaS "${id}" 26100 24H2 "Hudson Valley" "2024 Update"
   !insertmacro WinVer_WaaS "${id}" 26200 25H2 "?"             "2025 Update"
-  !insertmacro WinVer_WaaS "${id}" 28000 26H1 "?"             "?"
+  !insertmacro WinVer_WaaS "${id}" 28000 26H1 "?"             "?" ; ARM64 specific release, don't check for this version
+  !insertmacro WinVer_WaaS "${id}" 26300 26H2 "?"             "2026 Update"
 
   !ifmacrodef WinVerExternal_WaaS_MapToBuild
     !insertmacro WinVerExternal_WaaS_MapToBuild ${op} "${id}" WinVer_WaaS_Build
