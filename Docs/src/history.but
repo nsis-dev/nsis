@@ -10,6 +10,10 @@ Released on ???? ??th, ????
 
 \b Fixed nsExec::ExecToLog crash (\W{http://sf.net/p/nsis/bugs/1323}{bug #1323})
 
+\S2{} nsDialogs
+
+\b Added JPG, GIF and PNG support to NSD_SetImage and NSD_SetStretchedImage
+
 \S2{} Translations
 
 \b Updated Italian and Korean
