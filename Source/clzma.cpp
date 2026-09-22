@@ -175,9 +175,11 @@ CLZMA::~CLZMA()
   }
 }
 
-int CLZMA::Init(int level, unsigned int dicSize)
+int CLZMA::Init(int level, unsigned int dicSize, unsigned int dataSize)
 {
   End();
+  (void)level; /* strength is controlled by SetCompressorDictSize */
+  (void)dataSize;
 
   compressor_finished = FALSE;
   finish = FALSE;

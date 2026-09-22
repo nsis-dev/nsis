@@ -52,7 +52,8 @@
 #define IDB_COMPRESSOR_ZLIB              11
 #define IDB_COMPRESSOR_BEST              12
 #define IDB_COMPRESSOR_LZMA              13
-#define IMAGECOUNT                       14
+#define IDB_COMPRESSOR_ZSTD              14
+#define IMAGECOUNT                       15
 #define IDB_COMPRESSOR IDB_COMPRESSOR_SCRIPT
 
 typedef struct ToolBarStruct {

@@ -308,9 +308,13 @@ return c[1]; // avoid c being optimized out
 
 if conf.CheckRequirement('memcpy', memcpy_test):
 	add_file('memcpy.c')
+	stub_env.Append(CPPDEFINES = ['_NSIS_NODEFLIB_CRTMEMCPY'])
+	stub_uenv.Append(CPPDEFINES = ['_NSIS_NODEFLIB_CRTMEMCPY'])
 
 if conf.CheckRequirement('memset', memset_test):
 	add_file('memset.c')
+	stub_env.Append(CPPDEFINES = ['_NSIS_NODEFLIB_CRTMEMSET'])
+	stub_uenv.Append(CPPDEFINES = ['_NSIS_NODEFLIB_CRTMEMSET'])
 
 conf.Finish()
 
