@@ -246,7 +246,7 @@ To compile you can right-click your .nsi file and select Compile NSIS Script. Th
 
 The compiler will check your script and give you warnings or an error. If an error occurs (i.e. 2 parameters required but only 1 given) the compiler will abort and a short error message including the line number will be displayed. For non-critical errors the compiler will give a warning (i.e. two \R{adirtext}{DirText} commands in one script). If your script has no errors the compiler will output an installer for you to distribute.
 
-NSIS supports different compression methods, as explained \R{asetcompressor}{here}. ZLIB is the default compression method, which is fast and uses only a little bit of memory. LZMA is a good method for the creation of small installers for internet distribution. BZIP2 usually compresses better than ZLIB but not as good as LZMA, it is useful if you need lower memory usage or fast script compilation.
+NSIS supports different compression methods, as explained \R{asetcompressor}{here}. ZLIB is the default compression method, which is fast and uses only a little bit of memory. The best compression is achieved by LZMA so it ideal for creating small installers for internet distribution, but compression can take a long time. ZSTD compresses better than ZLIB but not as good as LZMA, it is useful if you need faster script compilation. The compression/speed tradeoff can be fine-tuned using \R{asetcompressionlevel}{SetCompressionLevel}.
 
 It is also possible to compile Windows installers on Linux, BSD or Mac OS X servers. See \R{build}{Building NSIS} for details.
 

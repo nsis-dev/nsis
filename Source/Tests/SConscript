@@ -64,6 +64,37 @@ zlib_exehead_files = Split("""
 
 required_exehead += zlib_exehead_files
 
+zstd_files = Split("""
+	zstd/lib/common/entropy_common.c
+	zstd/lib/common/error_private.c
+	zstd/lib/common/fse_decompress.c
+	zstd/lib/common/pool.c
+	zstd/lib/common/threading.c
+	zstd/lib/common/xxhash.c
+	zstd/lib/common/zstd_common.c
+	zstd/lib/compress/fse_compress.c
+	zstd/lib/compress/hist.c
+	zstd/lib/compress/huf_compress.c
+	zstd/lib/compress/zstd_compress.c
+	zstd/lib/compress/zstd_compress_literals.c
+	zstd/lib/compress/zstd_compress_sequences.c
+	zstd/lib/compress/zstd_compress_superblock.c
+	zstd/lib/compress/zstd_double_fast.c
+	zstd/lib/compress/zstd_fast.c
+	zstd/lib/compress/zstd_lazy.c
+	zstd/lib/compress/zstd_ldm.c
+	zstd/lib/compress/zstd_opt.c
+	zstd/lib/compress/zstd_preSplit.c
+	zstd/lib/compress/zstdmt_compress.c
+""")
+
+zstd_exehead_files = Split("""
+	zstd/lib/decompress/zstd_decompress.c
+	zstd/lib/decompress/zstd_decompress_block.c
+	zstd/lib/decompress/zstd_ddict.c
+	zstd/lib/decompress/huf_decompress.c
+""")
+
 cppunitlibs = Split("""
 	cppunit
 """)
@@ -84,7 +115,7 @@ scripts = Split("""
 	winver.nsi
 """)
 
-Import('env AddAvailableLibs AddZLib')
+Import('env AddAvailableLibs AddZLib AddZstd')
 
 # Test scripts
 env.TestScript(scripts)
@@ -97,6 +128,20 @@ if env['PLATFORM'] == 'win32':
 
 AddAvailableLibs(env, extralibs)
 AddZLib(env, env['PLATFORM'])
+use_external_zstd = AddZstd(env, env['PLATFORM'])
+
+# for zstd (same multithreading mode as makensis itself)
+env.Append(CPPDEFINES = ['ZSTD_MULTITHREAD'])
+# Always needed: CZstd::Init calls ConditionVarsSupported() whenever
+# ZSTD_MULTITHREAD is defined (bundled or system zstd alike).
+required += Split("""
+	DynamicCondVars.c
+""")
+if use_external_zstd:
+	env.Append(CPPDEFINES = ['USE_SYSTEM_ZSTD'])
+else:
+	required += zstd_files
+	required_exehead += zstd_exehead_files
 
 # compile using msvcrt (that's how cppunit.lib is built)
 if 'msvc' in env['TOOLS'] or 'mstoolkit' in env['TOOLS']:
@@ -107,6 +152,9 @@ env.Append(CCFLAGS = ['$EXCEPTION_FLAG'])
 
 # for lzma
 env.Append(CPPDEFINES = ['COMPRESS_MF_BT'])
+
+# for zstd
+env.Append(CPPDEFINES = ['DYNAMIC_BMI2=0'])
 
 # test for CppUnit
 conf = env.Configure()

@@ -316,6 +316,8 @@ conf.Finish()
 conf = defenv.Configure(custom_tests = { 'CheckRequirement' : check_requirement })
 if conf.CheckRequirement('memset', 'char c[128] = "test";switch(sizeof(void*)){case 8:break;case sizeof(void*):return 1;}'):
 	add_file('memset.c', 'memset')
+	stub_env.Append(CPPDEFINES = ['_NSIS_NODEFLIB_CRTMEMSET'])
+	stub_uenv.Append(CPPDEFINES = ['_NSIS_NODEFLIB_CRTMEMSET'])
 
 memcpy_test = """
 switch(sizeof(void*)){case 8:break;case sizeof(void*):return 1;}

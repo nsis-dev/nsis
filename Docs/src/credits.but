@@ -114,6 +114,10 @@
 
 \b NSIS 3 POSIX support
 
+\e{David Beinder}
+
+\b Zstandard compression support
+
 \H{testers} Testers
 
 \e{Jason Ross aka JasonFriday13}

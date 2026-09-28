@@ -1,0 +1,209 @@
+/*
+ * czstd.h
+ * 
+ * This file is a part of NSIS.
+ * 
+ * Copyright (C) 1999-2026 Nullsoft and Contributors
+ * 
+ * Licensed under the zlib/libpng license (the "License");
+ * you may not use this file except in compliance with the License.
+ * 
+ * Licence details can be found in the file COPYING.
+ * 
+ * This software is provided 'as-is', without any express or implied
+ * warranty.
+ *
+ */
+
+#ifndef __CZSTD_H__
+#define __CZSTD_H__
+
+#include "compressor.h"
+#include "DynamicCondVars.h"
+
+#if defined(__APPLE__)
+#include <sys/sysctl.h>
+#endif
+
+#if defined(__linux__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(__CYGWIN__) || defined(__FreeBSD__)
+#include <unistd.h>
+#endif
+
+#define ZSTD_STATIC_LINKING_ONLY
+#ifdef USE_SYSTEM_ZSTD
+#include <zstd.h>
+#include <zstd_errors.h>
+#else
+#include "zstd/lib/zstd.h"
+#include "zstd/lib/zstd_errors.h"
+#endif
+
+#ifdef _MSC_VER
+#define CZSTD_TLS __declspec(thread)
+#else
+#define CZSTD_TLS __thread
+#endif
+
+class CZstd : public ICompressor {
+  public:
+    CZstd() : cstream(NULL), frameFinished(false) { }
+
+    virtual ~CZstd()
+    {
+      if (cstream) ZSTD_freeCStream(cstream);
+    }
+
+    virtual int Init(int level, unsigned int dict_size, unsigned int dataSize) {
+      size_t res;
+      (void)dict_size; /* zstd derives its window from the level; nothing to do */
+      /* NSIS script levels are 0-19; clamp defensively so a level stored
+       * while another compressor was selected can't fail the build. */
+      if (level < 0) level = 0;
+      if (level > 19) level = 19;
+      if (!cstream)
+      {
+        cstream = ZSTD_createCStream();
+        if (!cstream) return -ZSTD_error_memory_allocation;
+
+        res = ZSTD_CCtx_setParameter(cstream, ZSTD_c_format, ZSTD_f_zstd1_magicless);
+        if (ZSTD_isError(res)) return -ZSTD_getErrorCode(res);
+      }
+
+      res = ZSTD_CCtx_reset(cstream, ZSTD_reset_session_only);
+      if (ZSTD_isError(res)) return -ZSTD_getErrorCode(res);
+
+      res = ZSTD_CCtx_setParameter(cstream, ZSTD_c_compressionLevel, level);
+      if (ZSTD_isError(res)) return -ZSTD_getErrorCode(res);
+
+      #if defined(ZSTD_MULTITHREAD)
+      /* Re-applied per frame: worker count depends on the pledged size.
+       * Falls back to single-threaded when condvars are missing (XP) or
+       * the library was built without multithreading support. */
+      if (ConditionVarsSupported())
+      {
+        res = ZSTD_CCtx_setParameter(cstream, ZSTD_c_nbWorkers, getWorkerCount(dataSize));
+        if (ZSTD_isError(res))
+        {
+          res = ZSTD_CCtx_setParameter(cstream, ZSTD_c_nbWorkers, 0);
+          if (ZSTD_isError(res)) return -ZSTD_getErrorCode(res);
+        }
+      }
+      #endif
+
+      if (dataSize != C_UNKNOWN_SIZE)
+      {
+        /* NB: reset above already cleared any previous pledge, so there
+         * is no stale size when dataSize is unknown. */
+        res = ZSTD_CCtx_setPledgedSrcSize(cstream, dataSize);
+        if (ZSTD_isError(res)) return -ZSTD_getErrorCode(res);
+      }
+
+      frameFinished = false;
+      return C_OK;
+    }
+
+    /* No per-frame cleanup needed; the context is reused across files. */
+    virtual int End() { return C_OK; }
+
+    virtual int Compress(bool doFinish)
+    {
+      if (frameFinished) return C_FINISHED;
+
+      size_t res = ZSTD_compressStream2(cstream, &output, &input, doFinish ? ZSTD_e_end : ZSTD_e_continue);
+
+      if (doFinish && res == 0)
+      {
+        frameFinished = true;
+        return C_FINISHED;
+      }
+
+      if (ZSTD_isError(res)) return -ZSTD_getErrorCode(res);
+      return C_OK;
+    }
+
+    virtual void SetNextIn(char *in, unsigned int size) {
+      input.src = in;
+      input.size = size;
+      input.pos = 0;
+    }
+
+    virtual void SetNextOut(char *out, unsigned int size) {
+      output.dst = out;
+      output.size = size;
+      output.pos = 0;
+    }
+
+    virtual char* GetNextOut() { return ((char*)output.dst) + output.pos; }
+
+    virtual unsigned int GetAvailIn() { return input.size - input.pos; }
+
+    virtual unsigned int GetAvailOut() { return output.size - output.pos; }
+
+    virtual const TCHAR* GetName() { return _T("zstd"); }
+
+    virtual const TCHAR* GetErrStr(int err)
+    {
+      const char *zstdMessage = ZSTD_getErrorString((ZSTD_ErrorCode)(-err));
+      if (!zstdMessage) return _T("unknown zstd error");
+
+      #ifdef UNICODE
+        static CZSTD_TLS TCHAR lastError[257] = { 0 };
+        mbstowcs(lastError, zstdMessage, 256);
+        lastError[256] = 0;
+        return lastError;
+      #else
+        return zstdMessage;
+      #endif
+    }
+
+  private:
+    ZSTD_CStream *cstream;
+    ZSTD_inBuffer input;
+    ZSTD_outBuffer output;
+    bool frameFinished;
+
+    static int getCoreCountLogical()
+    {
+      static int numCores = 0;
+      if (numCores) return numCores;
+      numCores = sysReadCoreCountLogical();
+      if (numCores < 1) numCores = 1;
+      return numCores;
+    }
+
+    /* Workers besides the calling thread; 0 disables multithreading.
+     * Small inputs skip MT (thread-pool overhead exceeds the gain). */
+    static unsigned int getWorkerCount(unsigned int dataSize)
+    {
+      int cores = getCoreCountLogical();
+      if (cores <= 1) return 0;
+      if (dataSize != C_UNKNOWN_SIZE && dataSize < 256 * 1024) return 0;
+      return (unsigned int)(cores - 1);
+    }
+
+#if defined(_WIN32) || defined(WIN32)
+    static int sysReadCoreCountLogical()
+    {
+      SYSTEM_INFO sysinfo;
+      GetSystemInfo(&sysinfo);
+      return sysinfo.dwNumberOfProcessors;
+    }
+#elif defined(__APPLE__)
+    static int sysReadCoreCountLogical()
+    {
+      int32_t numCores = 0;
+      size_t size = sizeof(int32_t);
+      if (sysctlbyname("hw.logicalcpu", &numCores, &size, NULL, 0) != 0) return -1;
+      return numCores;
+    }
+#elif defined(__linux__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(__CYGWIN__) || defined(__FreeBSD__)
+    static int sysReadCoreCountLogical()
+    {
+      return (int)sysconf(_SC_NPROCESSORS_ONLN);
+    }
+#else
+    static int sysReadCoreCountLogical() { return -1; }
+#endif
+};
+
+#endif
