@@ -26,10 +26,7 @@
 #endif
 
 #include "compressor.h"
-#include "7zip/7zip/IStream.h"
-#include "7zip/7zip/Compress/LZMA/LZMAEncoder.h"
-#include "7zip/Common/MyCom.h"
-#include "7zip/Common/Defs.h"
+#include "7zip/LzmaSDK/LzmaEnc.h"
 
 #define LZMA_BAD_CALL -1
 #define LZMA_INIT_ERROR -2
@@ -38,13 +35,23 @@
 #define LZMA_MEM_ERROR -5
 
 class CLZMA:
-  public ICompressor,
-  public ISequentialInStream,
-  public ISequentialOutStream,
-  public CMyUnknownImp
+  public ICompressor
 {
 private:
-  NCompress::NLZMA::CEncoder *_encoder;
+  struct InputStream
+  {
+    ISeqInStream vt;
+    CLZMA *owner;
+  } inputStream;
+
+  struct OutputStream
+  {
+    ISeqOutStream vt;
+    CLZMA *owner;
+  } outputStream;
+
+  CLzmaEncHandle encoder;
+  ISzAlloc allocator;
 
 #ifdef _WIN32
   HANDLE hCompressionThread;
@@ -65,7 +72,10 @@ private:
   BOOL finish;
   BOOL compressor_finished;
 
-  int ConvertError(HRESULT result);
+  static void *SzAlloc(ISzAllocPtr alloc, size_t size);
+  static void SzFree(ISzAllocPtr alloc, void *address);
+  static SRes Read(ISeqInStreamPtr stream, void *data, size_t *size);
+  static size_t Write(ISeqOutStreamPtr stream, const void *data, size_t size);
 
   void GetMoreIO();
   int CompressReal();
@@ -77,19 +87,12 @@ private:
 #endif
 
 public:
-  MY_UNKNOWN_IMP
-
   CLZMA();
   virtual ~CLZMA();
 
   virtual int Init(int level, unsigned int dicSize);
   virtual int End();
   virtual int Compress(bool flush);
-
-  STDMETHOD(Read)(void *data, UINT32 size, UINT32 *processedSize);
-  STDMETHOD(ReadPart)(void *data, UINT32 size, UINT32 *processedSize);
-  STDMETHOD(Write)(const void *data, UINT32 size, UINT32 *processedSize);
-  STDMETHOD(WritePart)(const void *data, UINT32 size, UINT32 *processedSize);
 
   virtual void SetNextIn(char *in, unsigned int size);
   virtual void SetNextOut(char *out, unsigned int size);
