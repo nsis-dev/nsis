@@ -67,6 +67,8 @@ static int NSISCALL ExecuteEntry(entry *entry_);
 // Convert OLE-supported file formats to a caller-owned bitmap compatible with STM_SETIMAGE.
 static HBITMAP NSISCALL LoadOLEPictureBitmap(LPCTSTR path, int width, int height)
 {
+  HRESULT (WINAPI *loadPictureFileEx)(VARIANT, LONG, LONG, DWORD, LPDISPATCH*) =
+    (HRESULT (WINAPI *)(VARIANT, LONG, LONG, DWORD, LPDISPATCH*)) myGetProcAddress(MGA_OleLoadPictureFileEx);
   IPicture *picture = NULL;
   IDispatch *dispatch = NULL;
   LPOLESTR olepath;
@@ -83,6 +85,8 @@ static HBITMAP NSISCALL LoadOLEPictureBitmap(LPCTSTR path, int width, int height
   WCHAR widepath[NSIS_MAX_STRLEN];
 #endif
 
+  if (!loadPictureFileEx) return NULL;
+
   attributes = GetFileAttributes(path);
   if (attributes == INVALID_FILE_ATTRIBUTES || (attributes & FILE_ATTRIBUTE_DIRECTORY)) return NULL;
 #ifndef _UNICODE
@@ -98,7 +102,7 @@ static HBITMAP NSISCALL LoadOLEPictureBitmap(LPCTSTR path, int width, int height
   V_BSTR(&filename) = SysAllocString(olepath);
   if (V_BSTR(&filename))
   {
-    hr = OleLoadPictureFileEx(filename, 0, 0, LP_DEFAULT, &dispatch);
+    hr = loadPictureFileEx(filename, 0, 0, LP_DEFAULT, &dispatch);
     if (SUCCEEDED(hr))
       hr = dispatch->lpVtbl->QueryInterface(dispatch, &IID_IPicture, (void**)&picture);
   }
