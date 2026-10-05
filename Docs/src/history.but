@@ -6,6 +6,10 @@ Released on September 27th, 2026
 
 \S1{v3.13-cl} Changelog
 
+\S2{} nsDialogs
+
+\b Added JPG, GIF and PNG support to NSD_SetImage and NSD_SetStretchedImage
+
 \S2{} Minor Changes
 
 \b Fixed nsExec::ExecToLog crash (\W{http://sf.net/p/nsis/bugs/1323}{bug #1323})
