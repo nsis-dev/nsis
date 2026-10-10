@@ -235,6 +235,17 @@ inline size_t nsis_iconv_adaptor
   return iconv_func (cd, (T)inbuf, inbytesleft, outbuf, outbytesleft);
 }
 
+static inline const char* nsis_iconv_get_host_endian_utf32_code()
+{
+  return Platform_IsBigEndian() ? "UTF-32BE" : "UTF-32LE";
+}
+
+// Bug #1333: On macOS/POSIX with 4-byte wchar_t, iconv maps "wchar_t" to UCS-2 (2 bytes) The platform wchar_t is actually 4-byte UTF-32.
+static inline const char* nsis_iconv_get_wchar_t_code()
+{
+  return sizeof(wchar_t) == 4 ? nsis_iconv_get_host_endian_utf32_code() : "wchar_t";
+}
+
 const char* nsis_iconv_get_host_endian_ucs4_code();
 bool nsis_iconv_reallociconv(iconv_t CD, char**In, size_t*cbInLeft, char**Mem, size_t&cbConverted);
 void create_code_page_string(char*buf, size_t len, UINT code_page); // Create iconv code from Windows codepage

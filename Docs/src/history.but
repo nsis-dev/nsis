@@ -1,5 +1,15 @@
 \A{history} Changelog and Release Notes
 
+\H{v3.14} 3.14
+
+Released on ????? ???, ????
+
+\S1{v3.14-cl} Changelog
+
+\S2{} Minor Changes
+
+\b Use UTF-32 encoding for native 4 byte wchar_t on POSIX (\W{http://sf.net/p/nsis/bugs/1333}{bug #1333})
+
 \H{v3.13} 3.13
 
 Released on September 27th, 2026

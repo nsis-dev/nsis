@@ -242,8 +242,9 @@ static char g_nrt_iconv_narrowlocbuf[50], *g_nrt_iconv_narrowloc = 0;
 bool NSISRT_Initialize() // Init function for POSIX
 {
   iconvdescriptor id;
+  const char* wchar_iconv_enc = nsis_iconv_get_wchar_t_code();
   g_nrt_iconv_narrowloc = const_cast<char*>(""); // Use "" and not "char", "char" is a GNU extension?
-  if (!id.Open("wchar_t", g_nrt_iconv_narrowloc)) 
+  if (!id.Open(wchar_iconv_enc, g_nrt_iconv_narrowloc)) 
   {
     unsigned int cchmax = COUNTOF(g_nrt_iconv_narrowlocbuf);
     const char *tmp = "";
@@ -252,7 +253,7 @@ bool NSISRT_Initialize() // Init function for POSIX
     if (strlen(tmp) >= cchmax) tmp = "";
 #endif
     strcpy(g_nrt_iconv_narrowloc = g_nrt_iconv_narrowlocbuf, tmp);
-    if (!id.Open("wchar_t", g_nrt_iconv_narrowloc))
+    if (!id.Open(wchar_iconv_enc, g_nrt_iconv_narrowloc))
     {
       // Unable to determine the iconv narrow string code, UTF-8 is the best we can do
       create_code_page_string(g_nrt_iconv_narrowloc, cchmax, CP_UTF8);
@@ -516,7 +517,7 @@ int WideCharToMultiByte(UINT CodePage, DWORD dwFlags, const wchar_t* lpWideCharS
 
   char cp[CODEPAGESTR_MAXLEN];
   create_code_page_string(cp, COUNTOF(cp), CodePage);
-  iconv_t cd = iconv_open(cp, "wchar_t");
+  iconv_t cd = iconv_open(cp, nsis_iconv_get_wchar_t_code());
   size_t cchNull = 0;
   if (cd == (iconv_t) -1) return 0;
   if (cchWideChar < 0) cchWideChar = (int) wcslen(lpWideCharStr), ++cchNull;
@@ -541,7 +542,7 @@ int MultiByteToWideChar(UINT CodePage, DWORD dwFlags, LPCSTR lpMultiByteStr,
 
   char cp[CODEPAGESTR_MAXLEN];
   create_code_page_string(cp, COUNTOF(cp), CodePage);
-  iconv_t cd = iconv_open("wchar_t", cp);
+  iconv_t cd = iconv_open(nsis_iconv_get_wchar_t_code(), cp);
   size_t cchNull = 0; // iconv on MacOS 14 & 15 does not parse the \0, we have to keep track of it.
   if (cd == (iconv_t) -1) return 0;
   if (cbMultiByte < 0) cbMultiByte = strlen(lpMultiByteStr), ++cchNull;
@@ -564,7 +565,7 @@ BOOL IsValidCodePage(UINT CodePage)
 {
   char cp[CODEPAGESTR_MAXLEN];
   create_code_page_string(cp, COUNTOF(cp), CodePage);
-  iconv_t cd = iconv_open("wchar_t", cp);
+  iconv_t cd = iconv_open(nsis_iconv_get_wchar_t_code(), cp);
   if (cd == (iconv_t) -1) return FALSE;
   iconv_close(cd);
   return TRUE;

@@ -78,7 +78,7 @@ UINT WCFromCodePoint(wchar_t*Dest,UINT cchDest,UINT32 CodPt)
   return 0;
 #else
   iconvdescriptor iconvd;
-  if (!iconvd.Open("wchar_t",iconvdescriptor::GetHostEndianUCS4Code())) return 0;
+  if (!iconvd.Open(nsis_iconv_get_wchar_t_code(),iconvdescriptor::GetHostEndianUCS4Code())) return 0;
   size_t inleft = 4;
   UINT cchW = iconvd.Convert(&CodPt,&inleft,Dest,cchDest*sizeof(wchar_t)) / sizeof(wchar_t);
   return !inleft ? cchW : 0;
@@ -120,9 +120,10 @@ bool CharEncConv::Initialize(UINT32 ToEnc, UINT32 FromEnc)
 #ifdef _WIN32
   return (IsWE(m_FE) || IsValidCodePage(FromEnc)) && (IsWE(m_TE) || IsValidCodePage(ToEnc));
 #else
+  const char* wchar_iconv_enc = nsis_iconv_get_wchar_t_code();
   char f[50], t[COUNTOF(f)];
-  if (IsWE(m_FE)) strcpy(f, "wchar_t"); else create_code_page_string(f, COUNTOF(f), m_FE);
-  if (IsWE(m_TE)) strcpy(t, "wchar_t"); else create_code_page_string(t, COUNTOF(t), m_TE);
+  if (IsWE(m_FE)) strcpy(f, wchar_iconv_enc); else create_code_page_string(f, COUNTOF(f), m_FE);
+  if (IsWE(m_TE)) strcpy(t, wchar_iconv_enc); else create_code_page_string(t, COUNTOF(t), m_TE);
   return m_TE == m_FE || m_iconvd.Open(t, f);
 #endif
 }
@@ -536,7 +537,7 @@ l_restart:
   else if (StreamEncoding().IsUTF16())
   {
 #ifndef _WIN32
-    if (!iconvd.Open("wchar_t", iconvdescriptor::GetHostEndianUCS4Code())) goto l_unsupportedencoding;
+    if (!iconvd.Open(nsis_iconv_get_wchar_t_code(), iconvdescriptor::GetHostEndianUCS4Code())) goto l_unsupportedencoding;
 #endif
     const bool utf16be = StreamEncoding().IsUTF16BE();
     unsigned short lead, trail, cchWC;
