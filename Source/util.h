@@ -32,6 +32,15 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+// Platform detection
+inline bool Platform_IsBigEndian() { return FIX_ENDIAN_INT16(0x00ff) != 0x00ff; }
+unsigned char Platform_SupportsUTF8Conversion();
+#ifdef _WIN32
+#define Platform_IsWindows() ( !0 )
+#else
+#define Platform_IsWindows() ( 0 )
+#endif
+
 static inline bool ui_add(unsigned int &r, unsigned int a, unsigned int b) { return (r = a + b) >= a; }
 static inline bool si_add(int &r, int a, int b)
 {
@@ -240,7 +249,8 @@ static inline const char* nsis_iconv_get_host_endian_utf32_code()
   return Platform_IsBigEndian() ? "UTF-32BE" : "UTF-32LE";
 }
 
-// Bug #1333: On macOS/POSIX with 4-byte wchar_t, iconv maps "wchar_t" to UCS-2 (2 bytes) The platform wchar_t is actually 4-byte UTF-32.
+// Bug #1333: On macOS/POSIX, with Apple's libiconv change, macOS <= 13 mapped wchar_t to UCS-4-INTERNAL and
+// macOS 14+ maps it to the locale encoding with wcrtomb/mbrctowc hooks.
 static inline const char* nsis_iconv_get_wchar_t_code()
 {
   return sizeof(wchar_t) == 4 ? nsis_iconv_get_host_endian_utf32_code() : "wchar_t";
@@ -454,15 +464,6 @@ RM_DEFINE_FREEFUNC(my_convert_free);
 #  define PATH_CONVERT(x) x = my_convert(x); MANAGE_WITH(x, my_convert_free);
 #else
 #  define PATH_CONVERT(x)
-#endif
-
-// Platform detection
-inline bool Platform_IsBigEndian() { return FIX_ENDIAN_INT16(0x00ff) != 0x00ff; }
-unsigned char Platform_SupportsUTF8Conversion();
-#ifdef _WIN32
-#define Platform_IsWindows() ( !0 )
-#else
-#define Platform_IsWindows() ( 0 )
 #endif
 
 #endif //_UTIL_H_
