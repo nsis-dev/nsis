@@ -40,14 +40,9 @@ bzip2_files = Split("""
 """)
 
 lzma_files = Split("""
-	7zip/7zGuids.cpp
-	7zip/7zip/Common/OutBuffer.cpp
-	7zip/7zip/Common/StreamUtils.cpp
-	7zip/7zip/Compress/LZ/LZInWindow.cpp
-	7zip/7zip/Compress/LZMA/LZMAEncoder.cpp
-	7zip/7zip/Compress/RangeCoder/RangeCoderBit.cpp
-	7zip/Common/Alloc.cpp
-	7zip/Common/CRC.cpp
+	7zip/LzmaSDK/CpuArch.c
+	7zip/LzmaSDK/LzFind.c
+	7zip/LzmaSDK/LzmaEnc.c
 """)
 
 libs = Split("""
@@ -87,7 +82,7 @@ env.Append(CPPDEFINES = ['_WIN32_IE=0x0500'])
 ##### LZMA specific defines
 
 lzma_env = env.Clone()
-lzma_env.Append(CPPDEFINES = ['COMPRESS_MF_BT'])
+lzma_env.Append(CPPDEFINES = ['Z7_ST'])
 lzma_files = lzma_env.Object(lzma_files)
 
 ##### Compile makensis

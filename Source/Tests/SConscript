@@ -30,14 +30,10 @@ required_exehead = Split("""
 
 lzma_files = Split("""
 	clzma.cpp
-	7zip/7zGuids.cpp
-	7zip/7zip/Common/OutBuffer.cpp
-	7zip/7zip/Common/StreamUtils.cpp
-	7zip/7zip/Compress/LZ/LZInWindow.cpp
-	7zip/7zip/Compress/LZMA/LZMAEncoder.cpp
-	7zip/7zip/Compress/RangeCoder/RangeCoderBit.cpp
-	7zip/Common/Alloc.cpp
-	7zip/Common/CRC.cpp
+	7zip/LzmaSDK/CpuArch.c
+	7zip/LzmaSDK/LzFind.c
+	7zip/LzmaSDK/LzmaEnc.c
+	7zip/LzmaSDK/LzmaDec.c
 	7zip/LZMADecode.c
 """)
 
@@ -106,7 +102,7 @@ if 'msvc' in env['TOOLS'] or 'mstoolkit' in env['TOOLS']:
 env.Append(CCFLAGS = ['$EXCEPTION_FLAG'])
 
 # for lzma
-env.Append(CPPDEFINES = ['COMPRESS_MF_BT'])
+env.Append(CPPDEFINES = ['Z7_ST'])
 
 # test for CppUnit
 conf = env.Configure()
