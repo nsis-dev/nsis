@@ -1181,6 +1181,9 @@ struct MGA_FUNC MGA_FUNCS[] = {
 #endif
   {"SHLWAPI",  "SHAutoComplete"},
   {"SHFOLDER", "SHGetFolderPathW"},
+#ifdef NSIS_CONFIG_ENHANCEDUI_SUPPORT
+  {"OLEAUT32", "OleLoadPictureFileEx"},
+#endif
 #ifdef NSIS_SUPPORT_GETDLLVERSION
   {"VERSION",  "GetFileVersionInfoSizeW"},
   {"VERSION",  "GetFileVersionInfoW"},
@@ -1201,6 +1204,9 @@ struct MGA_FUNC MGA_FUNCS[] = {
 #endif
   {"SHLWAPI",  "SHAutoComplete"},
   {"SHFOLDER", "SHGetFolderPathA"},
+#ifdef NSIS_CONFIG_ENHANCEDUI_SUPPORT
+  {"OLEAUT32", "OleLoadPictureFileEx"},
+#endif
 #ifdef NSIS_SUPPORT_GETDLLVERSION
   {"VERSION",  "GetFileVersionInfoSizeA"},
   {"VERSION",  "GetFileVersionInfoA"},
