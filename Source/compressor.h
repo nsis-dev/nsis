@@ -27,6 +27,12 @@
 #define C_FINISH true
 #define C_UNKNOWN_SIZE 0
 
+static inline int ClampLevel(int level, int lo, int hi) {
+  if (level < lo) return lo;
+  if (level > hi) return hi;
+  return level;
+}
+
 class ICompressor {
   public:
     virtual ~ICompressor() {}

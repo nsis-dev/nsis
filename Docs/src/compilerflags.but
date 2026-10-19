@@ -69,11 +69,11 @@ This command allows to change the compression level of some algorithms used to c
 
 The default level is 9.
 
-ZSTD offers levels 1 to 19. Compression at levels above 17 is fairly slow, and switching to LZMA is usually the better option. The lower levels compress extremely fast (100-500 MB/s) but result in lower compression than BZIP2. At the highest compression levels, it can use several 100MB of memory to build the installer.
+ZSTD offers levels 1 to 19. Level 0 is accepted as an alias for 1 (fastest), so \c SetCompressionLevel can be shared between compressors. Compression at levels above 17 is fairly slow, and switching to LZMA is usually the better option. The lower levels compress extremely fast (100-500 MB/s) but result in lower compression than BZIP2. At the highest compression levels, it can use several 100MB of memory to build the installer.
 
 ZLIB offers levels 0 to 9. Consider switching to ZSTD instead of lowering the default level for higher speed.
 
-Levels above the selected compressor's range are clamped to its maximum, so \c SetCompressionLevel can be used before \R{asetcompressor}{SetCompressor}.
+Levels outside the selected compressor's range are clamped (zlib 0-9, bzip2 1-9, zstd 1-19), so \c SetCompressionLevel can be used before \R{asetcompressor}{SetCompressor}.
 
 The compression strength of BZIP2 can not be changed and the strength of LZMA is controlled using \R{asetcompressordictsize}{SetCompressorDictSize}.
 
@@ -81,7 +81,7 @@ The compression strength of BZIP2 can not be changed and the strength of LZMA is
 
 \c dict_size_mb
 
-Sets the dictionary size in megabytes (MB) used by the LZMA compressor (default is 8 MB).
+Sets the dictionary size in megabytes (MB) used by the LZMA compressor (default is 8 MB). Ignored by the zlib, bzip2 and zstd compressors.
 
 \S2{asetdatablockoptimize} SetDatablockOptimize
 

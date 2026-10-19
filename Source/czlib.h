@@ -31,8 +31,7 @@ class CZlib : public ICompressor {
       (void)dataSize;
       /* Clamp: a level stored while another compressor was selected
        * (SetCompressionLevel allows 0-19) must not fail the build. */
-      if (level < 0) level = 0;
-      if (level > 9) level = 9;
+      level = ClampLevel(level, 0, 9);
       stream = new z_stream;
       if (!stream) return Z_MEM_ERROR;
 

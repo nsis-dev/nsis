@@ -56,10 +56,10 @@ class CZstd : public ICompressor {
     virtual int Init(int level, unsigned int dict_size, unsigned int dataSize) {
       size_t res;
       (void)dict_size; /* zstd derives its window from the level; nothing to do */
-      /* NSIS script levels are 0-19; clamp defensively so a level stored
-       * while another compressor was selected can't fail the build. */
-      if (level < 0) level = 0;
-      if (level > 19) level = 19;
+      /* NSIS script levels are 0-19; zstd supports 1-19 (0 in the zstd
+       * API means "use default", not "store"). Map 0 to 1 (fastest)
+       * so SetCompressionLevel 0 stays a valid "fastest" alias. */
+      level = ClampLevel(level, 1, 19);
       if (!cstream)
       {
         cstream = ZSTD_createCStream();

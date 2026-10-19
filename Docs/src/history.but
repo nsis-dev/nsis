@@ -10,6 +10,10 @@ Released on ????? ???, ????
 
 \b Use UTF-32 encoding for native 4 byte wchar_t on POSIX (\W{http://sf.net/p/nsis/bugs/1333}{bug #1333})
 
+\S2{} Compressors
+
+\b Added Zstandard (zstd) compression support with levels 1-19 (\R{asetcompressionlevel}{SetCompressionLevel})
+
 \H{v3.13} 3.13
 
 Released on September 27th, 2026
@@ -23,10 +27,6 @@ Released on September 27th, 2026
 \S2{} Translations
 
 \b Updated Italian and Korean
-
-\S2{} Compressors
-
-\b Added Zstandard (zstd) compression support with levels 1-19 (\R{asetcompressionlevel}{SetCompressionLevel})
 
 \S2{} Build System
 

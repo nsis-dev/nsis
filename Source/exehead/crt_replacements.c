@@ -30,6 +30,12 @@
  * CRT can't provide them (see SCons/Config/ms, SCons/Config/gnu); those
  * builds define _NSIS_NODEFLIB_CRTMEMCPY/_NSIS_NODEFLIB_CRTMEMSET and our
  * definitions below are skipped to avoid duplicate symbols. */
+#if defined(__GNUC__) || defined(__clang__)
+typedef size_t __nsis_alias_word_t __attribute__((__may_alias__));
+#else
+typedef size_t __nsis_alias_word_t;
+#endif
+
 #ifndef _NSIS_NODEFLIB_CRTMEMCPY
 void *memcpy(void *dest, const void *src, size_t count)
 {
@@ -41,8 +47,8 @@ void *memcpy(void *dest, const void *src, size_t count)
       && (((size_t)d & (sizeof(size_t) - 1)) == 0)
       && (((size_t)s & (sizeof(size_t) - 1)) == 0))
   {
-    size_t *dw = (size_t *)d;
-    const size_t *sw = (const size_t *)s;
+    __nsis_alias_word_t *dw = (__nsis_alias_word_t *)d;
+    const __nsis_alias_word_t *sw = (const __nsis_alias_word_t *)s;
     size_t n = count / sizeof(size_t);
     while (n--) *dw++ = *sw++;
     d = (char *)dw;
@@ -53,6 +59,18 @@ void *memcpy(void *dest, const void *src, size_t count)
   return dest;
 }
 #endif /* _NSIS_NODEFLIB_CRTMEMCPY */
+
+int memcmp(const void *a, const void *b, size_t n)
+{
+  const unsigned char *p = (const unsigned char *)a;
+  const unsigned char *q = (const unsigned char *)b;
+  while (n--)
+  {
+    if (*p != *q) return *p - *q;
+    p++; q++;
+  }
+  return 0;
+}
 
 #ifndef _NSIS_NODEFLIB_CRTMEMSET
 void *memset(void *mem, int c, size_t len)

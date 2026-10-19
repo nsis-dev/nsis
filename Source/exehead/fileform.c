@@ -71,20 +71,23 @@ typedef struct ZStdContext_s {
   unsigned int    avail_in;
   unsigned char*  next_out;
   unsigned int    avail_out;
+  int             initFailed;
 } ZStdContext;
 
 int inflate(ZStdContext* ctx)
 {
+  size_t ret;
+  if (ctx->initFailed || !ctx->dstream) return Z_ERR;
   ctx->inBuffer.src = ctx->next_in;
   ctx->inBuffer.size = ctx->avail_in;
   ctx->inBuffer.pos = 0;
   ctx->outBuffer.dst = ctx->next_out;
   ctx->outBuffer.size = ctx->avail_out;
   ctx->outBuffer.pos = 0;
-  size_t ret = ZSTD_decompressStream(ctx->dstream, &ctx->outBuffer, &ctx->inBuffer);
-  ctx->avail_in = ctx->inBuffer.size - ctx->inBuffer.pos;
+  ret = ZSTD_decompressStream(ctx->dstream, &ctx->outBuffer, &ctx->inBuffer);
+  ctx->avail_in = (unsigned int)(ctx->inBuffer.size - ctx->inBuffer.pos);
   ctx->next_in = (unsigned char*)ctx->inBuffer.src + ctx->inBuffer.pos;
-  ctx->avail_out = ctx->outBuffer.size - ctx->outBuffer.pos;
+  ctx->avail_out = (unsigned int)(ctx->outBuffer.size - ctx->outBuffer.pos);
   ctx->next_out = (unsigned char*)ctx->outBuffer.dst + ctx->outBuffer.pos;
   if (ret == 0) return Z_STREAM_END;
   if (ZSTD_isError(ret)) return Z_ERR;
@@ -93,13 +96,28 @@ int inflate(ZStdContext* ctx)
 
 void inflateReset(ZStdContext* ctx)
 {
+  size_t ret;
   if (!ctx->dstream)
   {
     ctx->dstream = ZSTD_createDStream();
-    ZSTD_DCtx_setParameter(ctx->dstream, ZSTD_d_format, ZSTD_f_zstd1_magicless);
+    if (!ctx->dstream)
+    {
+      ctx->initFailed = 1;
+      return;
+    }
+    ret = ZSTD_DCtx_setParameter(ctx->dstream, ZSTD_d_format, ZSTD_f_zstd1_magicless);
+    if (ZSTD_isError(ret))
+    {
+      ctx->initFailed = 1;
+      return;
+    }
   }
   /* session-only reset: preserves the magicless format above */
-  ZSTD_initDStream(ctx->dstream);
+  ret = ZSTD_initDStream(ctx->dstream);
+  if (ZSTD_isError(ret))
+    ctx->initFailed = 1;
+  else
+    ctx->initFailed = 0;
 }
 
 #endif//NSIS_COMPRESS_USE_ZSTD
@@ -414,8 +432,11 @@ retry:
 }
 
 #ifdef NSIS_COMPRESS_USE_ZSTD
-  #define IBUFSIZE ZSTD_BLOCKSIZE_MAX + 3
-  #define OBUFSIZE ZSTD_BLOCKSIZE_MAX
+  /* ZSTD_decompressStream is fully streaming; no need for full-block
+   * (128 KiB) buffers. Keep the same 16 KiB / 32 KiB sizes as the
+   * zlib path so every installer doesn't pay ~256 KiB of BSS. */
+  #define IBUFSIZE 16384
+  #define OBUFSIZE 32768
 #else
   #define IBUFSIZE 16384
   #define OBUFSIZE 32768

@@ -18,7 +18,13 @@
 #ifndef ___DYNAMIC_COND_VARS__H___
 #define ___DYNAMIC_COND_VARS__H___
 
+#if defined(_MSC_VER) && _MSC_VER < 1800
+typedef unsigned char bool;
+#define true 1
+#define false 0
+#else
 #include <stdbool.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {

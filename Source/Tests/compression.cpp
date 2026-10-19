@@ -103,6 +103,18 @@ public:
 #endif
   }
 
+  // Out-of-range levels must clamp, not fail (SetCompressionLevel 0-19
+  // is compressor-agnostic so it can precede SetCompressor).
+  void testLevelClamp(ICompressor &compressor, IDecompressor& decompressor, int level) {
+    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(level, 1 << 23, 1024) );
+    testCompressDecompress(1, compressor, decompressor);
+  }
+
+  void testUnknownSize(ICompressor &compressor, IDecompressor& decompressor) {
+    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(9, 1 << 23, C_UNKNOWN_SIZE) );
+    testCompressDecompress(1, compressor, decompressor);
+  }
+
 };
 
 class bzip2CompressionTest : public CompressionTest {
@@ -118,6 +130,9 @@ public:
     bzip2Decompressor decompressor;
 
     testCompressDecompress(compressor, decompressor);
+    // Regression: level stored for zstd (10-19) must not fail bzip2
+    testLevelClamp(compressor, decompressor, 19);
+    testLevelClamp(compressor, decompressor, 0);
   }
 
 };
@@ -152,6 +167,8 @@ public:
     zlibDecompressor decompressor;
 
     testCompressDecompress(compressor, decompressor);
+    testLevelClamp(compressor, decompressor, 19);
+    testLevelClamp(compressor, decompressor, 0);
   }
 
 };
@@ -169,6 +186,10 @@ public:
     zstdDecompressor decompressor;
 
     testCompressDecompress(compressor, decompressor);
+    // 0 maps to 1 (fastest), 19 is max; unknown size = solid/whole path
+    testLevelClamp(compressor, decompressor, 0);
+    testLevelClamp(compressor, decompressor, 19);
+    testUnknownSize(compressor, decompressor);
   }
 
 };

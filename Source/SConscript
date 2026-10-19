@@ -129,6 +129,8 @@ env.Append(CPPDEFINES = ['ZSTD_MULTITHREAD'])
 
 if not use_external_zstd:
 	# AddZstd already set up headers/libs + USE_SYSTEM_ZSTD otherwise
+	# Match the stub/tests: no runtime BMI2 dispatch in bundled sources.
+	env.Append(CPPDEFINES = ['DYNAMIC_BMI2=0'])
 	files += zstd_files
 
 makensis = env.Program(target, files)

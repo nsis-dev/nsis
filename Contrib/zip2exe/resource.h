@@ -30,6 +30,8 @@
 #define IDC_CLASSICUI                   1025
 #define IDC_INFO                        1026
 #define IDC_NSISICON                    1027
+/* Compressor radio IDs must stay contiguous in [IDC_ZLIB, IDC_ZSTD]:
+ * main.cpp iterates COMPRESSORID_FIRST..LAST and maps IDC+1-FIRST. */
 #define IDC_ZLIB                        1028
 #define IDC_BZIP2                       1029
 #define IDC_LZMA                        1030

@@ -2761,8 +2761,6 @@ int CEXEBuild::doCommand(int which_token, LineParser &line)
     {
       if (compressor == &lzma_compressor)
         warning_fl(DW_COMP_LEVEL_IGNORE, _T("SetCompressionLevel: compressor is set to LZMA. Effectively ignored."));
-      else if (compressor == &bzip2_compressor)
-        warning_fl(DW_COMP_LEVEL_IGNORE, _T("SetCompressionLevel: only supported by zstd and zlib. Effectively ignored."));
       if (build_compressor_set && build_compress_whole)
         warning_fl(DW_COMP_LEVEL_IGNORE, _T("SetCompressionLevel: data already compressed in compress whole mode. Effectively ignored."));
 
@@ -2772,6 +2770,12 @@ int CEXEBuild::doCommand(int which_token, LineParser &line)
        * SetCompressionLevel works before SetCompressor too; each
        * compressor clamps to its own range in Init(). */
       if (!s || build_compress_level < 0 || build_compress_level > 19) PRINTHELP();
+      if (compressor == &zlib_compressor && build_compress_level > 9)
+        warning_fl(DW_COMP_LEVEL_IGNORE, _T("SetCompressionLevel: level %d clamped to 9 for zlib."), build_compress_level);
+      else if (compressor == &bzip2_compressor && (build_compress_level < 1 || build_compress_level > 9))
+        warning_fl(DW_COMP_LEVEL_IGNORE, _T("SetCompressionLevel: level %d clamped to 1-9 for bzip2."), build_compress_level);
+      else if (compressor == &zstd_compressor && build_compress_level == 0)
+        warning_fl(DW_COMP_LEVEL_IGNORE, _T("SetCompressionLevel: level 0 mapped to 1 (fastest) for zstd."));
       SCRIPT_MSG(_T("SetCompressionLevel: %u\n"), build_compress_level);
     }
     return PS_OK;
