@@ -2435,11 +2435,12 @@ int CEXEBuild::doCommand(int which_token, LineParser &line)
         PRINTHELP();
       }
 
-      int k=line.gettoken_enum(a, _T("zlib\0bzip2\0lzma\0"));
+      int k=line.gettoken_enum(a, _T("zlib\0bzip2\0lzma\0zstd\0"));
       switch (k) {
         case 0: compressor = &zlib_compressor; break;
         case 1: compressor = &bzip2_compressor; break;
         case 2: compressor = &lzma_compressor; break;
+        case 3: compressor = &zstd_compressor; break;
         default: PRINTHELP();
       }
 
@@ -2765,7 +2766,16 @@ int CEXEBuild::doCommand(int which_token, LineParser &line)
 
       int s;
       build_compress_level=line.gettoken_int(1,&s);
-      if (!s || build_compress_level < 0 || build_compress_level > 9) PRINTHELP();
+      /* Accept 0-19 regardless of the currently selected compressor so
+       * SetCompressionLevel works before SetCompressor too; each
+       * compressor clamps to its own range in Init(). */
+      if (!s || build_compress_level < 0 || build_compress_level > 19) PRINTHELP();
+      if (compressor == &zlib_compressor && build_compress_level > 9)
+        warning_fl(DW_COMP_LEVEL_IGNORE, _T("SetCompressionLevel: level %d clamped to 9 for zlib."), build_compress_level);
+      else if (compressor == &bzip2_compressor && (build_compress_level < 1 || build_compress_level > 9))
+        warning_fl(DW_COMP_LEVEL_IGNORE, _T("SetCompressionLevel: level %d clamped to 1-9 for bzip2."), build_compress_level);
+      else if (compressor == &zstd_compressor && build_compress_level == 0)
+        warning_fl(DW_COMP_LEVEL_IGNORE, _T("SetCompressionLevel: level 0 mapped to 1 (fastest) for zstd."));
       SCRIPT_MSG(_T("SetCompressionLevel: %u\n"), build_compress_level);
     }
     return PS_OK;

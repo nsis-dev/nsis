@@ -25,12 +25,20 @@
 #define C_FINISHED 1
 
 #define C_FINISH true
+#define C_UNKNOWN_SIZE 0
+
+static inline int ClampLevel(int level, int lo, int hi) {
+  if (level < lo) return lo;
+  if (level > hi) return hi;
+  return level;
+}
 
 class ICompressor {
   public:
     virtual ~ICompressor() {}
 
-    virtual int Init(int level, unsigned int dict_size) = 0;
+    // If the total uncompressed size is not known yet, pass C_UNKNOWN_SIZE
+    virtual int Init(int level, unsigned int dict_size, unsigned int dataSize) = 0;
     virtual int End() = 0;
     virtual int Compress(bool finish) = 0;
 

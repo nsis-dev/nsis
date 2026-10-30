@@ -30,9 +30,13 @@
 #define IDC_CLASSICUI                   1025
 #define IDC_INFO                        1026
 #define IDC_NSISICON                    1027
+/* Compressor radio IDs must stay contiguous in [IDC_ZLIB, IDC_ZSTD]:
+ * main.cpp iterates COMPRESSORID_FIRST..LAST and maps IDC+1-FIRST, so a
+ * new compressor must take the next trailing ID after IDC_ZSTD. */
 #define IDC_ZLIB                        1028
 #define IDC_BZIP2                       1029
 #define IDC_LZMA                        1030
+#define IDC_ZSTD                        1031
 
 // Next default values for new objects
 //
@@ -40,7 +44,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        103
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1031
+#define _APS_NEXT_CONTROL_VALUE         1032
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

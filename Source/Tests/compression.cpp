@@ -10,6 +10,7 @@
 #include "../cbzip2.h"
 #include "../clzma.h"
 #include "../czlib.h"
+#include "../czstd.h"
 
 class CompressionTest : public CppUnit::TestFixture {
 
@@ -87,19 +88,31 @@ public:
   }
 
   void testCompressDecompress(ICompressor &compressor, IDecompressor& decompressor) {
-    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(9, 1 << 23) );
+    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(9, 1 << 23, 1024) );
     testCompressDecompress(1, compressor, decompressor);
 
-    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(9, 1 << 23) );
+    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(9, 1 << 23, 1024*1024) );
     testCompressDecompress(1024, compressor, decompressor);
 
 #ifndef NSIS_TESTS_FASTCOMPRESSIONONLY
-    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(9, 1 << 23) );
+    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(9, 1 << 23, 8*1024*1024) );
     testCompressDecompress(8*1024, compressor, decompressor);
 
-    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(9, 1 << 23) );
+    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(9, 1 << 23, 32*1024*1024) );
     testCompressDecompress(32*1024, compressor, decompressor);
 #endif
+  }
+
+  // Out-of-range levels must clamp, not fail (SetCompressionLevel 0-19
+  // is compressor-agnostic so it can precede SetCompressor).
+  void testLevelClamp(ICompressor &compressor, IDecompressor& decompressor, int level) {
+    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(level, 1 << 23, 1024) );
+    testCompressDecompress(1, compressor, decompressor);
+  }
+
+  void testUnknownSize(ICompressor &compressor, IDecompressor& decompressor) {
+    CPPUNIT_ASSERT_EQUAL( C_OK, compressor.Init(9, 1 << 23, C_UNKNOWN_SIZE) );
+    testCompressDecompress(1, compressor, decompressor);
   }
 
 };
@@ -117,6 +130,9 @@ public:
     bzip2Decompressor decompressor;
 
     testCompressDecompress(compressor, decompressor);
+    // Regression: level stored for zstd (10-19) must not fail bzip2
+    testLevelClamp(compressor, decompressor, 19);
+    testLevelClamp(compressor, decompressor, 0);
   }
 
 };
@@ -151,6 +167,29 @@ public:
     zlibDecompressor decompressor;
 
     testCompressDecompress(compressor, decompressor);
+    testLevelClamp(compressor, decompressor, 19);
+    testLevelClamp(compressor, decompressor, 0);
+  }
+
+};
+
+class zstdCompressionTest : public CompressionTest {
+
+  CPPUNIT_TEST_SUITE( zstdCompressionTest );
+  CPPUNIT_TEST( test );
+  CPPUNIT_TEST_SUITE_END();
+
+public:
+
+  void test() {
+    CZstd compressor;
+    zstdDecompressor decompressor;
+
+    testCompressDecompress(compressor, decompressor);
+    // 0 maps to 1 (fastest), 19 is max; unknown size = solid/whole path
+    testLevelClamp(compressor, decompressor, 0);
+    testLevelClamp(compressor, decompressor, 19);
+    testUnknownSize(compressor, decompressor);
   }
 
 };
@@ -158,3 +197,4 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION( bzip2CompressionTest );
 CPPUNIT_TEST_SUITE_REGISTRATION( lzmaCompressionTest );
 CPPUNIT_TEST_SUITE_REGISTRATION( zlibCompressionTest );
+CPPUNIT_TEST_SUITE_REGISTRATION( zstdCompressionTest );

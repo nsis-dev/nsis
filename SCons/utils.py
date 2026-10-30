@@ -297,4 +297,49 @@ def MakeReproducibleAction(target, source, env):
 def SilentActionEcho(target, source, env):
 	return None
 
-Export('GetStdSysEnvVarList AddAvailableLibs AddZLib GenerateTryLinkCode FlagsConfigure GetAvailableLibs GetOptionOrEnv SilentActionEcho IsPEExecutable SetPESecurityFlagsWorker SetPEMinOS MakeReproducibleAction')
+def AddZstd(env, platform, alias='install-utils'):
+	"""
+	Checks for platform specific zstd and adds the
+	appropriate compiler and linker options to the environment.
+	Returns True if external zstd is used, False if bundled source should be used.
+	When True is returned, USE_SYSTEM_ZSTD is defined so sources include
+	<zstd.h> instead of the bundled copy.
+	"""
+	zstd = 'zstd'
+	w32_inc = w32_lib = w32_dll = None
+	if platform == 'win32':
+		if 'ZSTD_W32' in env:
+			# Defer CPPPATH/LIBPATH/DLL until the lib+header check
+			# below succeeds, so a failed check doesn't leave stray
+			# paths or ship an unused DLL with the bundled fallback.
+			w32_inc = env['ZSTD_W32_INC']
+			w32_lib = env['ZSTD_W32_LIB']
+			zstd = ['libzstd', 'zstd']
+			if 'ZSTD_W32_DLL' in env and env['ZSTD_W32_DLL']:
+				w32_dll = env['ZSTD_W32_DLL']
+		else:
+			return False
+	# Avoid unnecessary configuring when cleaning targets
+	# and a clash when scons is run in parallel operation.
+	if not env.GetOption('clean'):
+		conf = env.Configure()
+		if w32_inc:
+			conf.env.Append(CPPPATH = w32_inc)
+			conf.env.Append(LIBPATH = w32_lib)
+		if conf.CheckLibWithHeader(zstd, 'zstd.h', 'c'):
+			# Need >= 1.4.0 (magicless frames, pledged src size)
+			if conf.TryCompile('#include <zstd.h>\n#if !defined(ZSTD_VERSION_NUMBER) || ZSTD_VERSION_NUMBER < 10400\n#error system zstd is too old\n#endif\nvoid nsis_zstd_version_check(void) {}\n', '.c'):
+				env = conf.Finish()
+				if w32_inc:
+					env.Append(CPPPATH = w32_inc)
+					env.Append(LIBPATH = w32_lib)
+				if w32_dll:
+					env.DistributeW32Bin(w32_dll, alias=alias)
+				env.Append(CPPDEFINES = ['USE_SYSTEM_ZSTD'])
+				return True
+			print('system zstd is too old (need >= 1.4.0), using bundled sources')
+		env = conf.Finish()
+		return False
+	return False
+
+Export('GetStdSysEnvVarList AddAvailableLibs AddZLib AddZstd GenerateTryLinkCode FlagsConfigure GetAvailableLibs GetOptionOrEnv SilentActionEcho IsPEExecutable SetPESecurityFlagsWorker SetPEMinOS MakeReproducibleAction')

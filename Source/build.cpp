@@ -881,7 +881,7 @@ int CEXEBuild::add_db_data(IMMap *mmap) // returns offset
 
     db->resize(st + bufferlen + sizeof(int));
 
-    int n = compressor->Init(build_compress_level, build_compress_dict_size);
+    int n = compressor->Init(build_compress_level, build_compress_dict_size, length);
     if (n != C_OK)
     {
       ERROR_MSG(_T("Internal compiler error #12345: deflateInit() failed(%") NPRIs _T(" [%d]).\n"), compressor->GetErrStr(n), n);
@@ -1028,7 +1028,7 @@ int CEXEBuild::add_data(const char *data, int length, IGrowBuf *dblock) // retur
     int bufferlen=length+1024+length/4; // give a nice 25% extra space
     dblock->resize(st+bufferlen+sizeof(int));
 
-    int n = compressor->Init(build_compress_level, build_compress_dict_size);
+    int n = compressor->Init(build_compress_level, build_compress_dict_size, length);
     if (n != C_OK)
     {
       ERROR_MSG(_T("Internal compiler error #12345: deflateInit() failed(%") NPRIs _T(" [%d]).\n"), compressor->GetErrStr(n), n);
@@ -2729,7 +2729,7 @@ retry_output:
 #ifdef NSIS_CONFIG_COMPRESSION_SUPPORT
   if (build_compress_whole)
   {
-    int n = compressor->Init(build_compress_level, build_compress_dict_size);
+    int n = compressor->Init(build_compress_level, build_compress_dict_size, C_UNKNOWN_SIZE);
     if (n != C_OK)
     {
       ERROR_MSG(_T("Internal compiler error #12345: deflateInit() failed(%") NPRIs _T(" [%d]).\n"), compressor->GetErrStr(n), n);
@@ -3196,7 +3196,8 @@ int CEXEBuild::uninstall_generate()
       // compress uninstaller too
       {
         char obuf[65536];
-        int n = compressor->Init(build_compress_level, build_compress_dict_size);
+        int uncompressed_total = uhd.getlen() + ubuild_datablock.getlen();
+        int n = compressor->Init(build_compress_level, build_compress_dict_size, uncompressed_total);
         if (n != C_OK)
         {
           ERROR_MSG(_T("Internal compiler error #12345: deflateInit() failed(%") NPRIs _T(" [%d]).\n"), compressor->GetErrStr(n), n);

@@ -53,6 +53,74 @@
 #define Z_OK BZ_OK
 #define Z_STREAM_END BZ_STREAM_END
 #endif//NSIS_COMPRESS_USE_BZIP2
+
+#ifdef NSIS_COMPRESS_USE_ZSTD
+
+#include "../zstd/lib/zstd.h"
+
+#define z_stream ZStdContext
+#define Z_OK 0
+#define Z_ERR -1
+#define Z_STREAM_END 1
+
+typedef struct ZStdContext_s {
+  ZSTD_DStream*   dstream;
+  ZSTD_outBuffer  outBuffer;
+  ZSTD_inBuffer   inBuffer;
+  unsigned char*  next_in;
+  unsigned int    avail_in;
+  unsigned char*  next_out;
+  unsigned int    avail_out;
+  int             initFailed;
+} ZStdContext;
+
+int inflate(ZStdContext* ctx)
+{
+  size_t ret;
+  if (ctx->initFailed || !ctx->dstream) return Z_ERR;
+  ctx->inBuffer.src = ctx->next_in;
+  ctx->inBuffer.size = ctx->avail_in;
+  ctx->inBuffer.pos = 0;
+  ctx->outBuffer.dst = ctx->next_out;
+  ctx->outBuffer.size = ctx->avail_out;
+  ctx->outBuffer.pos = 0;
+  ret = ZSTD_decompressStream(ctx->dstream, &ctx->outBuffer, &ctx->inBuffer);
+  ctx->avail_in = (unsigned int)(ctx->inBuffer.size - ctx->inBuffer.pos);
+  ctx->next_in = (unsigned char*)ctx->inBuffer.src + ctx->inBuffer.pos;
+  ctx->avail_out = (unsigned int)(ctx->outBuffer.size - ctx->outBuffer.pos);
+  ctx->next_out = (unsigned char*)ctx->outBuffer.dst + ctx->outBuffer.pos;
+  if (ret == 0) return Z_STREAM_END;
+  if (ZSTD_isError(ret)) return Z_ERR;
+  return Z_OK;
+}
+
+void inflateReset(ZStdContext* ctx)
+{
+  size_t ret;
+  if (!ctx->dstream)
+  {
+    ctx->dstream = ZSTD_createDStream();
+    if (!ctx->dstream)
+    {
+      ctx->initFailed = 1;
+      return;
+    }
+  }
+  /* session-only reset keeps the stream reusable across blocks without
+   * freeing it; re-apply the magicless format afterwards (same pattern
+   * as the unit-test decompressor in Source/Tests/decompress.cpp). */
+  ret = ZSTD_DCtx_reset(ctx->dstream, ZSTD_reset_session_only);
+  if (ZSTD_isError(ret))
+  {
+    ctx->initFailed = 1;
+    return;
+  }
+  ret = ZSTD_DCtx_setParameter(ctx->dstream, ZSTD_d_format, ZSTD_f_zstd1_magicless);
+  ctx->initFailed = ZSTD_isError(ret) ? 1 : 0;
+}
+
+#endif//NSIS_COMPRESS_USE_ZSTD
+
 #endif//NSIS_CONFIG_COMPRESSION_SUPPORT
 
 struct block_header g_blocks[BLOCKS_NUM];
@@ -362,6 +430,9 @@ retry:
   return 0;
 }
 
+/* Shared by all compressors (zlib included): 16 KiB in / 32 KiB out.
+ * ZSTD_decompressStream is fully streaming, so no larger full-block
+ * buffers are needed. */
 #define IBUFSIZE 16384
 #define OBUFSIZE 32768
 
