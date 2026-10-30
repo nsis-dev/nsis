@@ -111,10 +111,12 @@ static LPCTSTR GetCompressorName()
   #endif
   switch (g_compressor)
   {
+  /* Cases in IDC numeric order; values are IDC+1-FIRST, so a new compressor
+   * must append a new trailing ID to keep the range contiguous. */
   case IDC_ZLIB  + 1 - COMPRESSORID_FIRST: return _T("ZLIB");
   case IDC_BZIP2 + 1 - COMPRESSORID_FIRST: return _T("BZIP2");
-  case IDC_ZSTD  + 1 - COMPRESSORID_FIRST: return _T("ZSTD");
   case IDC_LZMA  + 1 - COMPRESSORID_FIRST: return _T("LZMA");
+  case IDC_ZSTD  + 1 - COMPRESSORID_FIRST: return _T("ZSTD");
   default: return _T("?");
   }
 }
