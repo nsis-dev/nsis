@@ -150,7 +150,11 @@ else:
 			'WakeAllConditionVariable=NSIS_WakeAllConditionVariable',
 			'SleepConditionVariableCS=NSIS_SleepConditionVariableCS',
 		])
-	zstd_objs = zstd_env.Object(zstd_files)
+	zstd_objs = []
+	for i in zstd_files:
+		# NB: sources live in #Source, not in this SConscript's dir
+		# (Source/Tests); same '#Source/' prefix as the loop below.
+		zstd_objs.append(zstd_env.Object('required/%s' % i.split('.')[0], '#Source/%s' % i))
 	required_exehead += zstd_exehead_files
 
 # compile using msvcrt (that's how cppunit.lib is built)
