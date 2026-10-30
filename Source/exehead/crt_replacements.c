@@ -31,9 +31,9 @@
  * builds define _NSIS_NODEFLIB_CRTMEMCPY/_NSIS_NODEFLIB_CRTMEMSET and our
  * definitions below are skipped to avoid duplicate symbols. */
 #if defined(__GNUC__) || defined(__clang__)
-typedef size_t __nsis_alias_word_t __attribute__((__may_alias__));
+typedef size_t nsis_alias_word_t __attribute__((__may_alias__));
 #else
-typedef size_t __nsis_alias_word_t;
+typedef size_t nsis_alias_word_t;
 #endif
 
 #ifndef _NSIS_NODEFLIB_CRTMEMCPY
@@ -47,8 +47,8 @@ void *memcpy(void *dest, const void *src, size_t count)
       && (((size_t)d & (sizeof(size_t) - 1)) == 0)
       && (((size_t)s & (sizeof(size_t) - 1)) == 0))
   {
-    __nsis_alias_word_t *dw = (__nsis_alias_word_t *)d;
-    const __nsis_alias_word_t *sw = (const __nsis_alias_word_t *)s;
+    nsis_alias_word_t *dw = (nsis_alias_word_t *)d;
+    const nsis_alias_word_t *sw = (const nsis_alias_word_t *)s;
     size_t n = count / sizeof(size_t);
     while (n--) *dw++ = *sw++;
     d = (char *)dw;

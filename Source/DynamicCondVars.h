@@ -15,8 +15,8 @@
  *
  */
 
-#ifndef ___DYNAMIC_COND_VARS__H___
-#define ___DYNAMIC_COND_VARS__H___
+#ifndef NSIS_DYNAMIC_COND_VARS_H
+#define NSIS_DYNAMIC_COND_VARS_H
 
 #if defined(_MSC_VER) && _MSC_VER < 1800
 typedef unsigned char bool;
@@ -57,4 +57,4 @@ BOOL WINAPI NSIS_SleepConditionVariableCS(void* conditionVariable, void* critica
 }
 #endif
 
-#endif//!___DYNAMIC_COND_VARS__H___
+#endif//!NSIS_DYNAMIC_COND_VARS_H
