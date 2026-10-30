@@ -123,15 +123,26 @@ lzma_files = lzma_env.Object(lzma_files)
 
 files = makensis_files + bzip2_files + lzma_files + dynamiccondvars_files
 
-# zstdmt needs condition variables; DynamicCondVars.c (above) provides
-# XP-compatible dynamic wrappers, see the note in zstd/lib/common/threading.h.
+# zstdmt needs condition variables; the bundled sources stay pristine and
+# call the Vista+ APIs by name, so on Windows the zstd objects are built
+# with -D mappings that redirect those calls to the XP-compatible dynamic
+# wrappers in DynamicCondVars.c (no direct Vista+ imports in makensis).
+# CZstd::Init only enables workers when ConditionVarsSupported() is true.
 env.Append(CPPDEFINES = ['ZSTD_MULTITHREAD'])
 
 if not use_external_zstd:
 	# AddZstd already set up headers/libs + USE_SYSTEM_ZSTD otherwise
 	# Match the stub/tests: no runtime BMI2 dispatch in bundled sources.
 	env.Append(CPPDEFINES = ['DYNAMIC_BMI2=0'])
-	files += zstd_files
+	zstd_env = env.Clone()
+	if env['PLATFORM'] == 'win32':
+		zstd_env.Append(CPPDEFINES = [
+			'InitializeConditionVariable=NSIS_InitializeConditionVariable',
+			'WakeConditionVariable=NSIS_WakeConditionVariable',
+			'WakeAllConditionVariable=NSIS_WakeAllConditionVariable',
+			'SleepConditionVariableCS=NSIS_SleepConditionVariableCS',
+		])
+	files += zstd_env.Object(zstd_files)
 
 makensis = env.Program(target, files)
 

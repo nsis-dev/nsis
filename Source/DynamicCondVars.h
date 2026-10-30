@@ -26,6 +26,10 @@ typedef unsigned char bool;
 #include <stdbool.h>
 #endif
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -34,10 +38,18 @@ bool ConditionVarsSupported();
 
 #ifdef _WIN32
 
-void NSIS_InitializeConditionVariable(void* conditionVariable);
-void NSIS_WakeConditionVariable(void* conditionVariable);
-void NSIS_WakeAllConditionVariable(void* conditionVariable);
-bool NSIS_SleepConditionVariableCS(void* conditionVariable, void* criticalSection, int milliseconds);
+/* Drop-in replacements for the Vista+ condition-variable APIs. They are
+ * called through -D mappings applied to the bundled zstd sources only
+ * (see Source/SConscript, Source/Tests/SConscript), so the vendored
+ * zstd/lib/common/threading.h stays pristine and makensis links no
+ * Vista+ imports directly. void* is used instead of PCONDITION_VARIABLE
+ * so this header builds with pre-Vista SDKs too; on x86 the WINAPI
+ * decoration still matches (pointer-sized single argument). */
+
+VOID WINAPI NSIS_InitializeConditionVariable(void* conditionVariable);
+VOID WINAPI NSIS_WakeConditionVariable(void* conditionVariable);
+VOID WINAPI NSIS_WakeAllConditionVariable(void* conditionVariable);
+BOOL WINAPI NSIS_SleepConditionVariableCS(void* conditionVariable, void* criticalSection, DWORD milliseconds);
 
 #endif
 

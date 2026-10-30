@@ -140,7 +140,17 @@ required += Split("""
 if use_external_zstd:
 	env.Append(CPPDEFINES = ['USE_SYSTEM_ZSTD'])
 else:
-	required += zstd_files
+	# As in Source/SConscript: keep zstd/lib/common/threading.h pristine
+	# and redirect the Vista+ condvar APIs to DynamicCondVars.c wrappers.
+	zstd_env = env.Clone()
+	if env['PLATFORM'] == 'win32':
+		zstd_env.Append(CPPDEFINES = [
+			'InitializeConditionVariable=NSIS_InitializeConditionVariable',
+			'WakeConditionVariable=NSIS_WakeConditionVariable',
+			'WakeAllConditionVariable=NSIS_WakeAllConditionVariable',
+			'SleepConditionVariableCS=NSIS_SleepConditionVariableCS',
+		])
+	zstd_objs = zstd_env.Object(zstd_files)
 	required_exehead += zstd_exehead_files
 
 # compile using msvcrt (that's how cppunit.lib is built)
@@ -172,6 +182,9 @@ if cppunit:
 		o = env.Object(b, s)
 
 		required_obj.append(o)
+
+	if not use_external_zstd:
+		required_obj += zstd_objs
 
 	# exehead files special treatment
 	exehead_env = env.Clone()

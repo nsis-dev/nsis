@@ -35,9 +35,9 @@ typedef unsigned char bool;
    * before the worker pool spawns, but concurrent first calls are safe. */
   static volatile LONG initState = 0; /* 0=uninit, 1=initializing, 2=done */
   static bool isAvailable = false;
-  typedef void (WINAPI *InitCondVarFn)(void*);
-  typedef void (WINAPI *WakeCondVarFn)(void*);
-  typedef bool (WINAPI *SleepCondVarFn)(void*, void*, int);
+  typedef VOID (WINAPI *InitCondVarFn)(void*);
+  typedef VOID (WINAPI *WakeCondVarFn)(void*);
+  typedef BOOL (WINAPI *SleepCondVarFn)(void*, void*, DWORD);
   static InitCondVarFn _InitializeConditionVariable;
   static WakeCondVarFn _WakeConditionVariable;
   static WakeCondVarFn _WakeAllConditionVariable;
@@ -66,9 +66,9 @@ typedef unsigned char bool;
     return isAvailable;
   }
 
-void NSIS_InitializeConditionVariable(void* cv) { _InitializeConditionVariable(cv); }
-void NSIS_WakeConditionVariable(void* cv) { _WakeConditionVariable(cv); }
-void NSIS_WakeAllConditionVariable(void* cv) { _WakeAllConditionVariable(cv); }
-bool NSIS_SleepConditionVariableCS(void* cv, void* cs, int timeout) { return _SleepConditionVariableCS(cv, cs, timeout); }
+VOID WINAPI NSIS_InitializeConditionVariable(void* cv) { _InitializeConditionVariable(cv); }
+VOID WINAPI NSIS_WakeConditionVariable(void* cv) { _WakeConditionVariable(cv); }
+VOID WINAPI NSIS_WakeAllConditionVariable(void* cv) { _WakeAllConditionVariable(cv); }
+BOOL WINAPI NSIS_SleepConditionVariableCS(void* cv, void* cs, DWORD timeout) { return _SleepConditionVariableCS(cv, cs, timeout); }
 
 #endif
