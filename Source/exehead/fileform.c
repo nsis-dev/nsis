@@ -105,19 +105,18 @@ void inflateReset(ZStdContext* ctx)
       ctx->initFailed = 1;
       return;
     }
-    ret = ZSTD_DCtx_setParameter(ctx->dstream, ZSTD_d_format, ZSTD_f_zstd1_magicless);
-    if (ZSTD_isError(ret))
-    {
-      ctx->initFailed = 1;
-      return;
-    }
   }
-  /* session-only reset: preserves the magicless format above */
-  ret = ZSTD_initDStream(ctx->dstream);
+  /* session-only reset keeps the stream reusable across blocks without
+   * freeing it; re-apply the magicless format afterwards (same pattern
+   * as the unit-test decompressor in Source/Tests/decompress.cpp). */
+  ret = ZSTD_DCtx_reset(ctx->dstream, ZSTD_reset_session_only);
   if (ZSTD_isError(ret))
+  {
     ctx->initFailed = 1;
-  else
-    ctx->initFailed = 0;
+    return;
+  }
+  ret = ZSTD_DCtx_setParameter(ctx->dstream, ZSTD_d_format, ZSTD_f_zstd1_magicless);
+  ctx->initFailed = ZSTD_isError(ret) ? 1 : 0;
 }
 
 #endif//NSIS_COMPRESS_USE_ZSTD
@@ -431,16 +430,11 @@ retry:
   return 0;
 }
 
-#ifdef NSIS_COMPRESS_USE_ZSTD
-  /* ZSTD_decompressStream is fully streaming; no need for full-block
-   * (128 KiB) buffers. Keep the same 16 KiB / 32 KiB sizes as the
-   * zlib path so every installer doesn't pay ~256 KiB of BSS. */
-  #define IBUFSIZE 16384
-  #define OBUFSIZE 32768
-#else
-  #define IBUFSIZE 16384
-  #define OBUFSIZE 32768
-#endif
+/* Shared by all compressors (zlib included): 16 KiB in / 32 KiB out.
+ * ZSTD_decompressStream is fully streaming, so no larger full-block
+ * buffers are needed. */
+#define IBUFSIZE 16384
+#define OBUFSIZE 32768
 
 // returns -3 if compression error/eof/etc
 
