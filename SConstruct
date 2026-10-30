@@ -719,6 +719,20 @@ for stub in stubs:
 	if stub in defenv['SKIPSTUBS']:
 		continue
 
+	if stub == 'zstd':
+		# zstd 1.5.7 needs C99 and /alternatename (VS2005+); pre-8.0 MSVC
+		# (6.0/7.0/7.1, still used for legacy x86 release builds) gets a
+		# zstd-less special build instead of a hard failure. Modern MSVC,
+		# GCC and Clang (incl. CI: windows-2022/2025, ubuntu, macos) build
+		# the zstd stubs normally; pass SKIPSTUBS=zstd to skip manually.
+		try:
+			_msvs = float(str(defenv.get('MSVS_VERSION', '')).replace('Exp', ''))
+		except (TypeError, ValueError):
+			_msvs = None
+		if _msvs is not None and _msvs < 8.0:
+			print('Skipping zstd stubs (MSVC %s cannot build zstd, need 8.0+)' % defenv.get('MSVS_VERSION'))
+			continue
+
 	if defenv['UNICODE']:
 		BuildStub(stub, False, True)
 		BuildStub(stub, True, True)

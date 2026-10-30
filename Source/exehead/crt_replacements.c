@@ -127,7 +127,7 @@ void *realloc(void *ptr, size_t size)
   return newmem;
 }
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && _MSC_VER >= 1400 /* VS2005+: first linker with /alternatename */
 
 /*
  * MSVC 32-bit /nodefaultlib: the compiler generates calls to runtime helper
@@ -140,6 +140,10 @@ void *realloc(void *ptr, size_t size)
  *
  * On x86, C __cdecl functions get a leading underscore in the object file,
  * so nsis_rotl becomes _nsis_rotl at link time.
+ *
+ * Older MSVC (6.0/7.0/7.1, still used for legacy x86 stub builds) has neither
+ * /alternatename nor a C99 compiler for zstd 1.5.7: skip the zstd stubs
+ * there (SKIPSTUBS=zstd, automatic in SConstruct) instead of breaking them.
  */
 #pragma comment(linker, "/alternatename:__rotl=_nsis_rotl")
 #pragma comment(linker, "/alternatename:__rotl64=_nsis_rotl64")
@@ -224,4 +228,6 @@ unsigned __int64 nsis_allshl(unsigned __int64 val, int shift) {
   return ((unsigned __int64)hi << 32) | lo;
 }
 
-#endif /* _MSC_VER */
+#elif defined(_MSC_VER)
+#error zstd stubs require MSVC 2005 or newer; build with SKIPSTUBS=zstd on older toolchains (automatic in SConstruct)
+#endif /* _MSC_VER >= 1400 */
