@@ -132,13 +132,16 @@ def docs_emitter(target, source, env):
 	return target, source
 
 def docs_halibut_action(target, source, env):
-	buts = ' '.join(i.abspath for i in source if i.get_suffix() == '.but')
-	result = Execute(env.Action(
-		'${HALIBUT[0].abspath} ' + buts,
-		'', # empty display string
-		chdir = '$BUILDDIR',
-	))
-	#raw_input('meh?')
+	# NOTE: Do NOT use SCons Action chdir here (e.g. Execute(env.Action(..., chdir='$BUILDDIR'))).
+	# SCons implements chdir via process-global os.chdir, which races with other
+	# parallel (-j) jobs that use relative paths and fails with errors like
+	# "No such file or directory" at high job counts. Run halibut in a child
+	# process with cwd set instead, which only affects the child.
+	import subprocess
+	buts = [i.abspath for i in source if i.get_suffix() == '.but']
+	ret = subprocess.call([env['HALIBUT'][0].abspath] + buts, cwd=env['BUILDDIR'])
+	if ret != 0:
+		raise RuntimeError('halibut failed with exit code %d' % ret)
 
 def docs_fixer(target, source, env):
 	fixes = env['NSISDOCHTMLFIXES']
