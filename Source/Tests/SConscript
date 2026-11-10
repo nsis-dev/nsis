@@ -64,6 +64,37 @@ zlib_exehead_files = Split("""
 
 required_exehead += zlib_exehead_files
 
+zstd_files = Split("""
+	zstd/lib/common/entropy_common.c
+	zstd/lib/common/error_private.c
+	zstd/lib/common/fse_decompress.c
+	zstd/lib/common/pool.c
+	zstd/lib/common/threading.c
+	zstd/lib/common/xxhash.c
+	zstd/lib/common/zstd_common.c
+	zstd/lib/compress/fse_compress.c
+	zstd/lib/compress/hist.c
+	zstd/lib/compress/huf_compress.c
+	zstd/lib/compress/zstd_compress.c
+	zstd/lib/compress/zstd_compress_literals.c
+	zstd/lib/compress/zstd_compress_sequences.c
+	zstd/lib/compress/zstd_compress_superblock.c
+	zstd/lib/compress/zstd_double_fast.c
+	zstd/lib/compress/zstd_fast.c
+	zstd/lib/compress/zstd_lazy.c
+	zstd/lib/compress/zstd_ldm.c
+	zstd/lib/compress/zstd_opt.c
+	zstd/lib/compress/zstd_preSplit.c
+	zstd/lib/compress/zstdmt_compress.c
+""")
+
+zstd_exehead_files = Split("""
+	zstd/lib/decompress/zstd_decompress.c
+	zstd/lib/decompress/zstd_decompress_block.c
+	zstd/lib/decompress/zstd_ddict.c
+	zstd/lib/decompress/huf_decompress.c
+""")
+
 cppunitlibs = Split("""
 	cppunit
 """)
@@ -84,7 +115,7 @@ scripts = Split("""
 	winver.nsi
 """)
 
-Import('env AddAvailableLibs AddZLib')
+Import('env AddAvailableLibs AddZLib AddZstd')
 
 # Test scripts
 env.TestScript(scripts)
@@ -97,6 +128,34 @@ if env['PLATFORM'] == 'win32':
 
 AddAvailableLibs(env, extralibs)
 AddZLib(env, env['PLATFORM'])
+use_external_zstd = AddZstd(env, env['PLATFORM'])
+
+# for zstd (same multithreading mode as makensis itself)
+env.Append(CPPDEFINES = ['ZSTD_MULTITHREAD'])
+# Always needed: CZstd::Init calls ConditionVarsSupported() whenever
+# ZSTD_MULTITHREAD is defined (bundled or system zstd alike).
+required += Split("""
+	DynamicCondVars.c
+""")
+if use_external_zstd:
+	env.Append(CPPDEFINES = ['USE_SYSTEM_ZSTD'])
+else:
+	# As in Source/SConscript: keep zstd/lib/common/threading.h pristine
+	# and redirect the Vista+ condvar APIs to DynamicCondVars.c wrappers.
+	zstd_env = env.Clone()
+	if env['PLATFORM'] == 'win32':
+		zstd_env.Append(CPPDEFINES = [
+			'InitializeConditionVariable=NSIS_InitializeConditionVariable',
+			'WakeConditionVariable=NSIS_WakeConditionVariable',
+			'WakeAllConditionVariable=NSIS_WakeAllConditionVariable',
+			'SleepConditionVariableCS=NSIS_SleepConditionVariableCS',
+		])
+	zstd_objs = []
+	for i in zstd_files:
+		# NB: sources live in #Source, not in this SConscript's dir
+		# (Source/Tests); same '#Source/' prefix as the loop below.
+		zstd_objs.append(zstd_env.Object('required/%s' % i.split('.')[0], '#Source/%s' % i))
+	required_exehead += zstd_exehead_files
 
 # compile using msvcrt (that's how cppunit.lib is built)
 if 'msvc' in env['TOOLS'] or 'mstoolkit' in env['TOOLS']:
@@ -107,6 +166,9 @@ env.Append(CCFLAGS = ['$EXCEPTION_FLAG'])
 
 # for lzma
 env.Append(CPPDEFINES = ['COMPRESS_MF_BT'])
+
+# for zstd
+env.Append(CPPDEFINES = ['DYNAMIC_BMI2=0'])
 
 # test for CppUnit
 conf = env.Configure()
@@ -124,6 +186,9 @@ if cppunit:
 		o = env.Object(b, s)
 
 		required_obj.append(o)
+
+	if not use_external_zstd:
+		required_obj += zstd_objs
 
 	# exehead files special treatment
 	exehead_env = env.Clone()

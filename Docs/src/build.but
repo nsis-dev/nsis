@@ -107,6 +107,8 @@ To build NSIS Menu, install \W{http://www.wxwidgets.org/}{wxWidgets 2.8}, create
 
 \\<b\\>Important note for Microsoft Visual C++ 2012 users:\\</b\\> Installers generated using this release and beyond will not be able to run on Windows 9x or Windows 2000. The minimum requirement for 2012 is Windows XP.
 
+\\<b\\>Note on Zstandard stubs and legacy toolchains:\\</b\\> The Zstandard stubs need a C99 compiler and /alternatename (MSVC 2005 or newer, or GCC/Clang). Builds with MSVC 6.0/7.0/7.1 automatically skip the zstd stubs, producing a zstd-less build; pass \c SKIPSTUBS=zstd to skip them manually on any toolchain.
+
 \H{build_posix} Building on POSIX
 
 As of NSIS 2.01, the compiler, makensis, also compiles on POSIX platforms. POSIX platforms include Linux, *BSD, Mac OS X and others. Since the generated installer will eventually run on Windows, a \W{http://www.libsdl.org/extras/win32/cross/README.txt}{cross-compiler} is needed in order to compile them.

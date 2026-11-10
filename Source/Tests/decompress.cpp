@@ -1,5 +1,6 @@
 #include "decompress.h"
 
+#include <limits.h>
 #include <string.h> // for memset
 
 #if _MSC_VER > 1200 // Hack to avoid extern "C" causing trouble with templates
@@ -26,6 +27,15 @@ extern "C" {
 #define NSIS_COMPRESS_USE_ZLIB
 #include "../zlib/ZLIB.H"
 #undef NSIS_COMPRESS_USE_ZLIB
+
+#define ZSTD_STATIC_LINKING_ONLY
+#ifdef USE_SYSTEM_ZSTD
+#include <zstd.h>
+#include <zstd_errors.h>
+#else
+#include "../zstd/lib/zstd.h"
+#include "../zstd/lib/zstd_errors.h"
+#endif
 }
 
 #define DECOMPRESSOR(name, type, initf, dec, u)   \
@@ -69,3 +79,53 @@ extern "C" {
 DECOMPRESSOR(lzmaDecompressor, lzma_stream, lzmaInit, lzmaDecode, unsigned char);
 DECOMPRESSOR(bzip2Decompressor, DState, BZ2_bzDecompressInit, BZ2_bzDecompress, unsigned char);
 DECOMPRESSOR(zlibDecompressor, z_stream, inflateReset, inflate, unsigned char);
+
+zstdDecompressor::zstdDecompressor() { ctx = ZSTD_createDStream(); }
+
+zstdDecompressor::~zstdDecompressor() { if (ctx) ZSTD_freeDStream(ctx); }
+
+void zstdDecompressor::setNextIn(void *buffer, int size)
+{
+  input.src = buffer;
+  input.size = size;
+  input.pos = 0;
+}
+
+void zstdDecompressor::setNextOut(void *buffer, int size)
+{
+  output.dst = buffer;
+  output.size = size;
+  output.pos = 0;
+}
+
+int zstdDecompressor::getAvailOut()
+{
+  size_t avail = output.size - output.pos;
+  return avail > INT_MAX ? INT_MAX : (int)avail;
+}
+
+void zstdDecompressor::init()
+{
+  size_t ret;
+  if (!ctx) return;
+  ret = ZSTD_DCtx_reset(ctx, ZSTD_reset_session_only);
+  if (ZSTD_isError(ret)) return;
+  ret = ZSTD_DCtx_setParameter(ctx, ZSTD_d_format, ZSTD_f_zstd1_magicless);
+  if (ZSTD_isError(ret))
+  {
+    /* Fail loudly on config error: drop the context so decompress()
+     * reports an error instead of silently using the wrong format. */
+    ZSTD_freeDStream(ctx);
+    ctx = NULL;
+  }
+}
+
+int zstdDecompressor::decompress()
+{
+  size_t ret;
+  if (!ctx) return -1;
+  ret = ZSTD_decompressStream(ctx, &output, &input);
+  if (ret == 0) return 1;
+  if (ZSTD_isError(ret)) return -ZSTD_getErrorCode(ret);
+  return 0;
+}

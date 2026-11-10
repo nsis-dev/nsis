@@ -26,7 +26,13 @@ class CBzip2 : public ICompressor {
   public:
     virtual ~CBzip2() {}
 
-    virtual int Init(int level, unsigned int dict_size) {
+    virtual int Init(int level, unsigned int dict_size, unsigned int dataSize) {
+      (void)dict_size;
+      (void)dataSize;
+      /* bzip2 only supports 1-9; clamp so a level stored for
+       * another compressor (SetCompressionLevel allows 0-19)
+       * can't fail the build. 0 means fastest -> 1. */
+      level = ClampLevel(level, 1, 9);
       last_ret = !BZ_STREAM_END;
       stream = new bz_stream;
       if (!stream) return BZ_MEM_ERROR;
