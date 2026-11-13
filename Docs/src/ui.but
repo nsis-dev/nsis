@@ -75,7 +75,7 @@ If HWND is a window, Gotos jump_if_window, otherwise, Gotos jump_if_not_window (
 
 \c [/EXERESOURCE] [/STRINGID] [/RESIZETOFIT[WIDTH|HEIGHT]] ctrl imagetype lrflags imageid [user_var(imagehandle)]
 
-Loads and sets a image on a static control. \cw{ctrl} is the handle of the control. \cw{imagetype} must 0 for bitmaps and 1 for icons (and the control style must match the image type). \cw{lrflags} should be 0x10 to load from a file or 0 to load from a resource. \cw{imageid} specifies the file path or resource name. Use \cw{/EXERESOURCE} to load a resource from the installer .EXE. Use \cw{/STRINGID} if \cw{imageid} is a string, otherwise it is interpreted as a number. Use \cw{/RESIZETOFIT[WIDTH|HEIGHT]} to resize the image to the dimensions of the control. \cw{imagehandle} can optionally receive the handle of the loaded image.
+Loads and sets an image on a static control. \cw{ctrl} is the handle of the control. \cw{imagetype} must be 0 for BMP, JPG, GIF and PNG images, or 1 for icons (and the control style must match the image type). \cw{lrflags} should be 0x10 to load from a file or 0 to load from a resource. \cw{imageid} specifies the file path or resource name. Use \cw{/EXERESOURCE} to load a resource from the installer .EXE. Use \cw{/STRINGID} if \cw{imageid} is a string, otherwise it is interpreted as a number. Use \cw{/RESIZETOFIT[WIDTH|HEIGHT]} to resize the image to the dimensions of the control. \cw{imagehandle} can optionally receive the handle of the loaded image.
 
 Images loaded on individual pages should be destroyed to minimize resource leaks. If images are loaded into the same control multiple times, the previous image will only be destroyed if it is a bitmap image. Previous icons and 32-bit ARGB bitmaps must be retrieved with \cw{STM_GETIMAGE} and destroyed.
 
@@ -109,9 +109,9 @@ Overrides the default auto window-closing flag (specified for the installer usin
 
 \S2{setbrandingimage} SetBrandingImage
 
-\c [/IMGID=item_id_in_dialog] [/RESIZETOFIT] path_to_bitmap_file.bmp
+\c [/IMGID=item_id_in_dialog] [/RESIZETOFIT] path_to_image_file
 
-Sets the current bitmap file displayed as the branding image. If no IMGID is specified, the first image control found will be used, or the image control created by \R{aaddbrandingimage}{AddBrandingImage}. Note that this bitmap must be present on the user's machine. Use \cw{File} first to put it there. If /RESIZETOFIT is specified the image will be automatically resized (very poorly) to the image control size. If you used \R{aaddbrandingimage}{AddBrandingImage} you can get this size by compiling your script and watching for \R{aaddbrandingimage}{AddBrandingImage} output, it will tell you the size. SetBrandingImage will not work when called from .onInit!
+Sets the current BMP, JPG, GIF or PNG file displayed as the branding image. If no IMGID is specified, the first image control found will be used, or the image control created by \R{aaddbrandingimage}{AddBrandingImage}. Note that this image must be present on the user's machine. Use \cw{File} first to put it there. If /RESIZETOFIT is specified the image will be automatically resized to the image control size. If you used \R{aaddbrandingimage}{AddBrandingImage} you can get this size by compiling your script and watching for \R{aaddbrandingimage}{AddBrandingImage} output, it will tell you the size. SetBrandingImage will not work when called from .onInit!
 
 \S2{setdetailsview} SetDetailsView
 

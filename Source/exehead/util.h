@@ -181,6 +181,9 @@ enum myGetProcAddressFunctions {
 #endif
   MGA_SHAutoComplete, // x64 can link to shlwapi directly but as long as MGA_SHGetFolderPath is used we can stick with myGetProcAddress
   MGA_SHGetFolderPath, // TODO: This can probably call something else directly on x64
+#ifdef NSIS_CONFIG_ENHANCEDUI_SUPPORT
+  MGA_OleLoadPictureFileEx,
+#endif
 #ifdef NSIS_SUPPORT_GETDLLVERSION
   MGA_GetFileVersionInfoSize, // Version.dll exists in all Windows versions, it is delay loaded to avoid DLL hijacking [bug #1125]
   MGA_GetFileVersionInfo,
