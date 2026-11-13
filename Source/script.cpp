@@ -2592,12 +2592,26 @@ int CEXEBuild::doCommand(int which_token, LineParser &line)
       DefineInnerLangString(NLF_CREATED_UNINST);
     }
     return add_entry(&ent);
+    case TOK_REQUNINSTEXECLEVEL:
+      if (uninstall_mode)
+      {
+        switch (line.gettoken_enum(1,_T("none\0user\0highest\0admin\0")))
+        {
+        case 0: manifest_exec_level = manifest::exec_level_none; break;
+        case 1: manifest_exec_level = manifest::exec_level_user; break;
+        case 2: manifest_exec_level = manifest::exec_level_highest; break;
+        case 3: manifest_exec_level = manifest::exec_level_admin; break;
+        default: PRINTHELP();
+        }
+      }
+    return PS_OK;
 #else //! NSIS_CONFIG_UNINSTALL_SUPPORT
     case TOK_WRITEUNINSTALLER:
     case TOK_UNINSTCAPTION:
     case TOK_UNINSTICON:
     case TOK_UNINSTTEXT:
     case TOK_UNINSTSUBCAPTION:
+    case TOK_REQUNINSTEXECLEVEL:
       ERROR_MSG(_T("Error: %") NPRIs _T(" specified, NSIS_CONFIG_UNINSTALL_SUPPORT not defined.\n"), line.gettoken_str(0));
     return PS_ERROR;
 #endif
